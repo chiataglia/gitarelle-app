@@ -1,11 +1,14 @@
-import EscursioniTest from "./EscursioniTest"
+import EscursioniTest from "./features/treks/components/EscursioniTest";
+import TrekCreate from "./features/treks/components/TrekCreate";
+import Trek from "./features/treks/components/TrekList"
 
 function App() {
   return (
-    <div>
-      <h1>App Escursioni 🚶‍♀️</h1>
-      <p>Frontend React collegato!</p>
+    <div className="app-container">
+      <h1>Gitarelle</h1>
        <EscursioniTest />
+       <TrekCreate />
+       <Trek />
     </div>
   )
 }
