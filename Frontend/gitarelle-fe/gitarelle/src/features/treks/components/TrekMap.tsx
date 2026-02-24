@@ -5,7 +5,7 @@ import type { LatLngLiteral } from "leaflet";
 function Recenter({ pos }: { pos: LatLngLiteral }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(pos, 12); // 12 = zoom (puoi cambiarlo)
+    map.setView(pos, 13); // <-- zoom
   }, [map, pos.lat, pos.lng]);
   return null;
 }

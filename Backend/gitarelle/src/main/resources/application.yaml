@@ -1,8 +1,8 @@
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/appescursioni
-    username: chiara
-    password: keliaepi314
+    username:
+    password:
   jpa:
     hibernate:
       ddl-auto: update
