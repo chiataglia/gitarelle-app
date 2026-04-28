@@ -24,7 +24,7 @@ export default function TrekList() {
       }
     }
     load();
-  }, []);
+  }, []); // --> codice eseguito una sola volta quando appare il componente
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 16 }}>
@@ -52,7 +52,7 @@ export default function TrekList() {
       </div>
 
       <div>
-        <h2>Mappa</h2>
+        <h2></h2>
         {selected ? (
           <TrekMap lat={selected.lat} lon={selected.lon} />
         ) : (

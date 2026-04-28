@@ -2,6 +2,7 @@ import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import { useEffect } from "react";
 import type { LatLngLiteral } from "leaflet";
 
+//ricentra mappa intorno al punto in input
 function Recenter({ pos }: { pos: LatLngLiteral }) {
   const map = useMap();
   useEffect(() => {
@@ -10,8 +11,10 @@ function Recenter({ pos }: { pos: LatLngLiteral }) {
   return null;
 }
 
+//Riceve punto, converte in pos, restituisce div coon mappa centrata sul punto e pin su esso
 export default function TrekMap({ lat, lon }: { lat: number; lon: number }) {
-  const pos: LatLngLiteral = { lat, lng: lon };
+  const pos: LatLngLiteral = { lat, lng: lon };// pos, di tipo LatLngLiteral, sarà
+  // un oggetto con proprietà lat presa da lat e lng presa dalla variabile lon
 
   return (
     <div style={{ height: 420, width: "100%" }}>
