@@ -8,6 +8,7 @@ public class GitarelleApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(GitarelleApplication.class, args);
+		
 		Prova.method();
 	}
 
