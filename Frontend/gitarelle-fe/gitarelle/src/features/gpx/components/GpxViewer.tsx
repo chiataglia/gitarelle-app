@@ -1,197 +1,255 @@
-import { useEffect, useMemo, useState } from "react";
-import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
-import type { FeatureCollection, Geometry } from "geojson";
-import * as toGeoJSON from "@tmcw/togeojson";
-import L from "leaflet";
-import type { Trek } from "../../treks/types";
+import { useState } from "react";
+import { MapContainer, TileLayer } from "react-leaflet";
+import type { LatLngLiteral } from "leaflet";
+import { useTreks } from "../../treks/TreksContext";
+import { createTrekWithGpx, uploadGpx } from "../../treks/api";
+import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL } from "../../../shared/map";
+import { formatDate } from "../../../shared/format";
+import { parseGpx, type ParsedGpx } from "../../../shared/gpx";
+import { errorMessage } from "../../../shared/api";
+import TrackLayer from "../../../shared/TrackLayer";
+import FolderSelect from "../../treks/components/FolderSelect";
+import styles from "./GpxViewer.module.css";
 
-type Geo = FeatureCollection<Geometry>;
-
-function computeBounds(geo: Geo): L.LatLngBounds | null {
-  const bounds = L.latLngBounds([]);
-  let hasAny = false;
-
-  const pushCoord = (lng: number, lat: number) => {
-    bounds.extend([lat, lng]);
-    hasAny = true;
-  };
-
-  const walkCoords = (coords: any) => {
-    if (!coords) return;
-    if (typeof coords[0] === "number" && typeof coords[1] === "number") {
-      pushCoord(coords[0], coords[1]);
-      return;
-    }
-    for (const c of coords) walkCoords(c);
-  };
-
-  for (const f of geo.features) {
-    if (!f.geometry) continue;
-    walkCoords((f.geometry as any).coordinates);
-  }
-
-  return hasAny ? bounds : null;
-}
-
-function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
-  const map = useMap();
-  map.fitBounds(bounds, { padding: [20, 20] });
-  return null;
-}
+type Mode = "new" | "existing";
 
 export default function GpxViewer() {
-  const [treks, setTreks] = useState<Trek[]>([]);
+  const { treks, upsertTrek } = useTreks();
+  const today = new Date().toISOString().split("T")[0];
+
+  const [mode, setMode] = useState<Mode>("new");
   const [selectedTrekId, setSelectedTrekId] = useState<string>("");
 
-  const [geojson, setGeojson] = useState<Geo | null>(null);
+  // campi del nuovo trek
+  const [title, setTitle] = useState("");
+  const [trekDate, setTrekDate] = useState(today);
+  const [amichetti, setAmichetti] = useState("");
+  const [notes, setNotes] = useState("");
+  const [folderId, setFolderId] = useState<number | null>(null);
+  const [start, setStart] = useState<LatLngLiteral | null>(null);
+
+  const [gpx, setGpx] = useState<ParsedGpx | null>(null);
   const [fileName, setFileName] = useState<string>("");
   const [rawFile, setRawFile] = useState<File | null>(null);
   const [gpxTitle, setGpxTitle] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
-  const [saveOk, setSaveOk] = useState(false);
+  const [saveOk, setSaveOk] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   const center: [number, number] = [41.944, 12.456];
-  const bounds = useMemo(() => (geojson ? computeBounds(geojson) : null), [geojson]);
 
-  useEffect(() => {
-    fetch("http://localhost:8080/api/treks")
-      .then((r) => r.json())
-      .then((data: Trek[]) => setTreks(data))
-      .catch(() => {});
-  }, []);
+  const canSave = mode === "new"
+    ? Boolean(title.trim())
+    : Boolean(selectedTrekId);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (file) await loadFile(file);
+    e.target.value = ""; // permette di ricaricare lo stesso file dopo un reset
+  }
 
-    setSaveOk(false);
+  function onDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) loadFile(file);
+  }
+
+  async function loadFile(file: File) {
+    setSaveOk(null);
     setSaveError(null);
     setFileName(file.name);
     setRawFile(file);
 
-    const text = await file.text();
-    const xml = new DOMParser().parseFromString(text, "text/xml");
-    const converted = toGeoJSON.gpx(xml) as Geo;
-    setGeojson(converted);
+    const parsed = parseGpx(await file.text());
+    setGpx(parsed);
+
+    // precompila il nuovo trek con i dati del gpx (il punto di partenza diventa il punto del trek)
+    setTitle(parsed.info.name ?? file.name.replace(/\.gpx$/i, ""));
+    setTrekDate(parsed.info.date ?? today);
+    setStart(parsed.info.start ?? null);
   }
 
   async function onSave() {
-    if (!rawFile || !selectedTrekId) return;
+    if (!rawFile || !canSave) return;
 
     setSaving(true);
-    setSaveOk(false);
+    setSaveOk(null);
     setSaveError(null);
 
     try {
-      const formData = new FormData();
-      formData.append("file", rawFile);
-      if (gpxTitle.trim()) formData.append("title", gpxTitle.trim());
-
-      const res = await fetch(`http://localhost:8080/api/treks/${selectedTrekId}/gpx`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Errore ${res.status}. ${text}`);
+      if (mode === "new") {
+        const created = await createTrekWithGpx(
+          { title: title.trim(), trekDate, amichetti, notes, lat: start?.lat ?? null, lon: start?.lng ?? null, folderId },
+          rawFile,
+          gpxTitle,
+        );
+        upsertTrek(created);
+        setSaveOk(`Escursione "${created.title}" creata con il suo GPX!`);
+      } else {
+        upsertTrek(await uploadGpx(selectedTrekId, rawFile, gpxTitle));
+        setSaveOk("GPX salvato!");
       }
-
-      setSaveOk(true);
-    } catch (err: any) {
-      setSaveError(err.message ?? "Errore nel salvataggio");
+    } catch (err) {
+      setSaveError(errorMessage(err, "Errore nel salvataggio"));
     } finally {
       setSaving(false);
     }
   }
 
   function onReset() {
-    setGeojson(null);
+    setGpx(null);
     setFileName("");
     setRawFile(null);
     setGpxTitle("");
-    setSaveOk(false);
+    setTitle("");
+    setTrekDate(today);
+    setAmichetti("");
+    setNotes("");
+    setStart(null);
+    setFolderId(null);
+    setSelectedTrekId("");
+    setSaveOk(null);
+    setSaveError(null);
+  }
+
+  function changeMode(m: Mode) {
+    setMode(m);
+    setSaveOk(null);
     setSaveError(null);
   }
 
   return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-        <input type="file" accept=".gpx" onChange={onPickFile} />
+    <div className={styles.wrapper}>
+      {!gpx ? (
+        <label
+          className={`${styles.dropzone} ${dragging ? styles.dropzoneActive : ""}`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+        >
+          <input type="file" accept=".gpx" onChange={onPickFile} className={styles.fileInput} />
+          <span className={styles.dropIcon} aria-hidden="true">⤒</span>
+          <strong>Trascina qui il file .gpx</strong>
+          <span>oppure <u>sfoglia</u> dal computer</span>
+        </label>
+      ) : (
+        <div className={`card ${styles.toolbar}`}>
+          <div className={styles.toolbarTop}>
+            <div className={styles.fileChip}>
+              <span aria-hidden="true">🗺️</span>
+              <b title={fileName}>{fileName}</b>
+              <button type="button" className={styles.resetBtn} onClick={onReset} aria-label="Rimuovi file">✕</button>
+            </div>
 
-        {fileName ? (
-          <span>Caricato: <b>{fileName}</b></span>
-        ) : (
-          <span>Nessun file</span>
-        )}
-
-        {geojson && (
-          <button onClick={onReset}>Reset</button>
-        )}
-      </div>
-
-      {geojson && (
-        <div style={{ display: "grid", gap: 8 }}>
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <label htmlFor="gpxTrekSelect">Trek:</label>
-            <select
-              id="gpxTrekSelect"
-              value={selectedTrekId}
-              onChange={(e) => {
-                setSelectedTrekId(e.target.value);
-                setSaveOk(false);
-                setSaveError(null);
-              }}
-            >
-              <option value="">-- seleziona un trek --</option>
-              {treks.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}{t.trekDate ? ` (${t.trekDate})` : ""}
-                </option>
-              ))}
-            </select>
-
-            <input
-              type="text"
-              placeholder="Titolo GPX (opzionale)"
-              value={gpxTitle}
-              onChange={(e) => setGpxTitle(e.target.value)}
-              style={{ minWidth: 200 }}
-            />
-
-            <button onClick={onSave} disabled={saving || !selectedTrekId}>
-              {saving ? "Salvataggio..." : "Salva nel DB"}
-            </button>
-
-            {saveOk && <span style={{ color: "green" }}>GPX salvato!</span>}
-            {saveError && <span style={{ color: "crimson" }}>{saveError}</span>}
+            <div className={styles.segmented} role="tablist" aria-label="Dove salvare il GPX">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === "new"}
+                className={mode === "new" ? styles.segActive : ""}
+                onClick={() => changeMode("new")}
+              >
+                + Nuova escursione
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mode === "existing"}
+                className={mode === "existing" ? styles.segActive : ""}
+                onClick={() => changeMode("existing")}
+              >
+                Escursione esistente
+              </button>
+            </div>
           </div>
+
+          {mode === "new" ? (
+            <div className={styles.newGrid}>
+              <label className="field">
+                <span>Titolo</span>
+                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Anello del Monte Gennaro" />
+              </label>
+              <label className="field">
+                <span>Data</span>
+                <input type="date" value={trekDate} onChange={(e) => setTrekDate(e.target.value)} />
+              </label>
+              <label className="field">
+                <span>Amichetti</span>
+                <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
+              </label>
+              <label className="field">
+                <span>Titolo GPX</span>
+                <input value={gpxTitle} onChange={(e) => setGpxTitle(e.target.value)} placeholder="Opzionale" />
+              </label>
+              <FolderSelect value={folderId} onChange={setFolderId} className={styles.full} />
+              <label className={`field ${styles.full}`}>
+                <span>Note</span>
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Panorama, fatica, merenda al rifugio..." rows={3} />
+              </label>
+              <div className={`${styles.full} ${styles.startInfo}`}>
+                📍 Punto del trek (partenza del GPX): {start ? `${start.lat.toFixed(5)}, ${start.lng.toFixed(5)}` : "non disponibile, il trek verrà creato senza punto"}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.saveRow}>
+              <label className="field">
+                <span>Collega al trek</span>
+                <select
+                  id="gpxTrekSelect"
+                  value={selectedTrekId}
+                  onChange={(e) => {
+                    setSelectedTrekId(e.target.value);
+                    setSaveOk(null);
+                    setSaveError(null);
+                  }}
+                >
+                  <option value="">-- seleziona un trek --</option>
+                  {treks.map((t) => (
+                    <option key={t.id} value={t.id} disabled={t.hasGpx}>
+                      {t.title}{t.trekDate ? ` (${formatDate(t.trekDate)})` : ""}{t.hasGpx ? " · ha già un GPX" : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="field">
+                <span>Titolo GPX</span>
+                <input
+                  type="text"
+                  placeholder="Opzionale"
+                  value={gpxTitle}
+                  onChange={(e) => setGpxTitle(e.target.value)}
+                />
+              </label>
+            </div>
+          )}
+
+          <div className={styles.actions}>
+            <button className="btn btn-primary" onClick={onSave} disabled={saving || !canSave || saveOk !== null}>
+              {saving ? "Salvataggio..." : mode === "new" ? "Crea escursione con GPX" : "Salva nel DB"}
+            </button>
+            {saveOk && (
+              <button type="button" className="btn btn-ghost" onClick={onReset}>
+                Carica un altro GPX
+              </button>
+            )}
+          </div>
+
+          {saveOk && <div className="alert alert-success">✓ {saveOk}</div>}
+          {saveError && <div className="alert alert-error">{saveError}</div>}
         </div>
       )}
 
-      <div style={{ height: 520, borderRadius: 12, overflow: "hidden" }}>
-        <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }}>
-          <TileLayer
-            attribution="&copy; OpenStreetMap contributors"
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      <div className={`map-frame ${styles.map}`}>
+        <MapContainer center={center} zoom={11} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
+          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
 
-          {geojson && (
-            <>
-              <GeoJSON
-                data={geojson}
-                style={(feature) => {
-                  const t = feature?.geometry?.type;
-                  if (t === "LineString" || t === "MultiLineString") return { weight: 4 };
-                  return { weight: 2, opacity: 0.8 };
-                }}
-              />
-              {bounds && <FitBounds bounds={bounds} />}
-            </>
-          )}
+          {gpx && <TrackLayer gpx={gpx} trackKey={fileName} />}
         </MapContainer>
+        {!gpx && <div className={styles.mapHint}>L'anteprima del percorso apparirà qui</div>}
       </div>
     </div>
   );

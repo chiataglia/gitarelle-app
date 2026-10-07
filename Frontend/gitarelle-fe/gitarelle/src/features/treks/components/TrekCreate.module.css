@@ -1,3 +1,84 @@
-.coordinates{
-    margin-top: 12px;
+.layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.map {
+  min-height: 460px;
+}
+
+.coordinates {
+  position: absolute;
+  z-index: 500;
+  left: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(12, 36, 26, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-strong);
+  pointer-events: none;
+}
+
+.coordinatesSet {
+  font-variant-numeric: tabular-nums;
+  border-color: var(--accent);
+  pointer-events: auto; /* per il bottone "rimuovi punto" */
+  padding-right: 6px;
+}
+
+.clearPoint {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.clearPoint:hover {
+  background: var(--danger);
+  color: var(--accent-ink);
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .map {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 480px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.map :global(.leaflet-container) {
+  cursor: crosshair;
 }

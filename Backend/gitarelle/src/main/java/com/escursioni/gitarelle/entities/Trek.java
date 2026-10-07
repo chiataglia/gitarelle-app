@@ -24,14 +24,18 @@ public class Trek {
     @Column(columnDefinition = "text")
     private String amichetti;
 
-    @Column(nullable = false)
+    // facoltativi: un trek può nascere senza punto sulla mappa
     private Double lat;
 
-    @Column(nullable = false)
     private Double lon;
 
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
+
+    // facoltativa: un trek può non stare in nessuna cartella
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folder_id")
+    private Folder folder;
 
 
     public Long getId() {
@@ -96,6 +100,14 @@ public class Trek {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Folder getFolder() {
+        return folder;
+    }
+
+    public void setFolder(Folder folder) {
+        this.folder = folder;
     }
 
     @Override

@@ -1,14 +1,16 @@
 package com.escursioni.gitarelle.controllers;
 
+import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
+import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.entities.TrekGpx;
 import com.escursioni.gitarelle.services.TrekGpxService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -40,9 +42,14 @@ public class TrekGpxController {
     }
 
     @PostMapping(path = "/{id}/gpx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Void> upload(@PathVariable Long id, @RequestParam("file") MultipartFile file, @RequestParam(value = "title", required = false) String title) throws IOException {
+    public TrekResponseDto upload(@PathVariable Long id, @RequestParam("file") MultipartFile file, @RequestParam(value = "title", required = false) String title) {
+        TrekGpx gpx = this.trekGpxService.uploadGpxForTrek(id, title, file);
+        return TrekResponseDto.from(gpx.getTrek(), true);
+    }
 
-        this.trekGpxService.uploadGpxForTrek(id, title, file);
-        return ResponseEntity.noContent().build();
+    // Crea in un colpo solo trek + gpx. Parti multipart: "trek" (JSON), "file" (gpx), "gpxTitle" (opzionale)
+    @PostMapping(path = "/with-gpx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public TrekResponseDto createWithGpx(@Valid @RequestPart("trek") CreateTrekRequestDto trek, @RequestPart("file") MultipartFile file, @RequestParam(value = "gpxTitle", required = false) String gpxTitle) {
+        return TrekResponseDto.from(this.trekGpxService.createTrekWithGpx(trek, gpxTitle, file), true);
     }
 }

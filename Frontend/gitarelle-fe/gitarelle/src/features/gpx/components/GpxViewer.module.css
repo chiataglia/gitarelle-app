@@ -1,0 +1,204 @@
+.wrapper {
+  display: grid;
+  gap: 16px;
+}
+
+.dropzone {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 36px 20px;
+  text-align: center;
+  color: var(--muted);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone strong {
+  color: var(--text);
+  font-size: 17px;
+}
+
+.dropzone:hover,
+.dropzoneActive {
+  border-color: var(--accent);
+  background: rgba(242, 165, 65, 0.06);
+}
+
+.dropzone:focus-within {
+  outline: 3px solid rgba(242, 165, 65, 0.5);
+  outline-offset: 2px;
+}
+
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.dropIcon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  font-size: 22px;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.toolbar {
+  display: grid;
+  gap: 14px;
+}
+
+.toolbarTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.segmented button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented .segActive,
+.segmented .segActive:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.newGrid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.startInfo {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fileChip {
+  min-width: 0;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-strong);
+  font-size: 14px;
+}
+
+.fileChip b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resetBtn {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background: var(--danger);
+  color: var(--accent-ink);
+}
+
+.saveRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.map {
+  height: 520px;
+}
+
+.mapHint {
+  position: absolute;
+  z-index: 500;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(12, 36, 26, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border-strong);
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .newGrid {
+    grid-template-columns: 1fr;
+  }
+  .saveRow {
+    grid-template-columns: 1fr;
+  }
+  .map {
+    height: 400px;
+  }
+  .mapHint {
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+    max-width: 80%;
+  }
+}
