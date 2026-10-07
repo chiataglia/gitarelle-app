@@ -35,7 +35,7 @@ function ClickHandler({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
 // Mappa di dettaglio di un trek: traccia gpx se c'è, altrimenti il punto, altrimenti l'Italia
 export default function TrekMap({ point, gpx, trackKey, onPick }: Props) {
   return (
-    <div style={{ height: "100%", minHeight: 420, width: "100%", cursor: onPick ? "crosshair" : undefined }}>
+    <div style={{ height: "100%", minHeight: "var(--map-h)", width: "100%", cursor: onPick ? "crosshair" : undefined }}>
       <MapContainer center={point ?? ITALY} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
         {gpx && <TrackLayer gpx={gpx} trackKey={trackKey} />}

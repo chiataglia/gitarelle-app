@@ -28,6 +28,27 @@ public class TrekGpx {
 
     private Instant uploadedAt = Instant.now();
 
+    // calcolati dal file (GpxMetrics) al caricamento; null per i gpx caricati prima: li calcola StatsService
+    private Double distanceMeters;
+
+    private Double elevationGainMeters;
+
+    public Double getDistanceMeters() {
+        return distanceMeters;
+    }
+
+    public void setDistanceMeters(Double distanceMeters) {
+        this.distanceMeters = distanceMeters;
+    }
+
+    public Double getElevationGainMeters() {
+        return elevationGainMeters;
+    }
+
+    public void setElevationGainMeters(Double elevationGainMeters) {
+        this.elevationGainMeters = elevationGainMeters;
+    }
+
     public Long getTrekId() {
         return trekId;
     }

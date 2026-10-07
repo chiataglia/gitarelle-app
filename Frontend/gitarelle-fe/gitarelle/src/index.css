@@ -21,6 +21,15 @@
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Inter", system-ui, Arial, sans-serif;
 
+  /* layout comune: tutte le sezioni hanno la stessa larghezza e le mappe principali la stessa altezza.
+     Breakpoint usati ovunque: 1024px (tablet orizzontale / portatile piccolo),
+     768px (tablet verticale), 480px (telefono) */
+  --content-max: 1280px;
+  --gutter: 24px;
+  --map-h: clamp(380px, 64vh, 600px);    /* mappe delle sezioni */
+  --map-h-dialog: clamp(260px, 42vh, 380px); /* mappe dentro i dialog */
+  --list-col: 340px;                      /* colonna lista accanto a una mappa */
+
   font-family: var(--font-body);
   line-height: 1.5;
   color-scheme: dark;
@@ -63,9 +72,9 @@ a {
 }
 
 .app-container {
-  max-width: 1120px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 0 24px 80px;
+  padding: 0 var(--gutter) 80px;
 }
 
 /* ---------- sezioni ---------- */
@@ -293,16 +302,48 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1024px) {
+  :root {
+    --list-col: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    scroll-padding-top: 112px; /* l'header qui è su due righe */
+  }
+  :root {
+    --gutter: 16px;
+    --map-h: clamp(320px, 55vh, 460px);
+  }
   .app-container {
-    padding: 0 16px 64px;
+    padding-bottom: 64px;
   }
   .section {
     margin-top: 56px;
   }
 }
 
+@media (max-width: 480px) {
+  :root {
+    --map-h: clamp(300px, 50vh, 400px);
+  }
+}
+
 .btn-sm {
   padding: 7px 14px;
   font-size: 13px;
+}
+
+/* visibile solo agli screen reader (es. tabelle dati dietro ai grafici) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

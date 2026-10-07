@@ -25,13 +25,21 @@ async function toApiError(res: Response): Promise<ApiError> {
   }
 }
 
+// Chi deve sapere che la sessione è scaduta (l'AuthContext, che riporta al login)
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: (() => void) | null) {
+  onUnauthorized = handler;
+}
+
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(`${API_URL}${path}`, init);
+    // credentials: il backend è su un'altra porta, senza questo il cookie di sessione non viene inviato
+    res = await fetch(`${API_URL}${path}`, { ...init, credentials: "include" });
   } catch {
     throw new ApiError(0, "Server non raggiungibile");
   }
+  if (res.status === 401 && !path.startsWith("/auth/")) onUnauthorized?.();
   if (!res.ok) throw await toApiError(res);
   return res;
 }

@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 
 @Service
 public class TrekGpxService {
@@ -26,11 +25,8 @@ public class TrekGpxService {
         this.trekService = trekService;
     }
 
-    public List<TrekGpx> findAllGpx() {
-        return this.trekGpxRepository.findAll();
-    }
-
     public TrekGpx findGpxById(Long trekId) {
+        trekService.findTrekById(trekId); // verifica che il trek sia dell'utente
         return this.trekGpxRepository.findById(trekId)
                 .orElseThrow(() -> new GpxNotFoundException(trekId));
     }
@@ -70,6 +66,9 @@ public class TrekGpxService {
         } catch (IOException e) {
             throw new GpxReadException(e);
         }
+        GpxMetrics metrics = GpxMetrics.computeOrZero(gpx.getData());
+        gpx.setDistanceMeters(metrics.distanceMeters());
+        gpx.setElevationGainMeters(metrics.elevationGainMeters());
         return gpx;
     }
 

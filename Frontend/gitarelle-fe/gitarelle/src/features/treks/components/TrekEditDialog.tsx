@@ -5,7 +5,7 @@ import { updateTrek } from "../api";
 import { useTreks } from "../TreksContext";
 import { errorMessage } from "../../../shared/api";
 import Modal from "../../../shared/Modal";
-import MapPicker from "./MapPicker";
+import MapPicker from "../../../shared/MapPicker";
 import FolderSelect from "./FolderSelect";
 import createStyles from "./TrekCreate.module.css";
 import styles from "./TrekDialogs.module.css";

@@ -7,8 +7,8 @@ import TrekEditDialog from "./TrekEditDialog";
 import TrekDeleteDialog from "./TrekDeleteDialog";
 import FolderBar from "./FolderBar";
 import { useTreks } from "../TreksContext";
-import { useGpxTracks } from "../useGpxTracks";
-import { updateTrekLocation, uploadGpx } from "../api";
+import { useGpxTracks } from "../../../shared/useGpxTracks";
+import { fetchGpxText, updateTrekLocation, uploadGpx } from "../api";
 import styles from "./TrekList.module.css";
 import { formatDate } from "../../../shared/format";
 import { errorMessage } from "../../../shared/api";
@@ -54,7 +54,7 @@ export default function TrekList() {
   const gpxIds = mode === "detail"
     ? (selected?.hasGpx ? [selected.id] : [])
     : comparedTreks.filter((c) => c.trek.hasGpx).map((c) => c.id);
-  const gpxTracks = useGpxTracks(gpxIds);
+  const gpxTracks = useGpxTracks(gpxIds, fetchGpxText);
 
   // trek aperti nei dialog di modifica / eliminazione
   const [editingId, setEditingId] = useState<Trek["id"] | null>(null);
@@ -209,7 +209,7 @@ export default function TrekList() {
         </div>
       )}
 
-      <div className={`${styles.layout} ${comparing ? styles.layoutWide : ""}`}>
+      <div className={`${styles.layout} ${comparing ? styles.layoutCompare : ""}`}>
         <div className={styles.listCol}>
           {loading && (
             <div className={styles.skeletons}>

@@ -12,3 +12,10 @@ spring:
 
 server:
   port: 8080
+  servlet:
+    session:
+      # login valido 7 giorni di inattività
+      timeout: 7d
+      cookie:
+        http-only: true   # il cookie di sessione non è leggibile da JavaScript
+        same-site: lax    # non viene inviato da altri siti con POST/PUT/DELETE

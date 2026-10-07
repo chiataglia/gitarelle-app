@@ -1,0 +1,113 @@
+.screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* stesse curve di livello dell'hero, dietro al pannello */
+.screen::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 640px;
+  height: 640px;
+  opacity: 0.14;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400' fill='none' stroke='%237fd8a0' stroke-width='1.2'%3E%3Cpath d='M200 40c90 0 160 60 160 150s-80 170-170 170S30 290 40 200 110 40 200 40z'/%3E%3Cpath d='M200 80c70 0 120 45 120 115s-60 125-125 125S75 270 80 200s50-120 120-120z'/%3E%3Cpath d='M205 120c45 0 80 30 80 75s-40 85-85 85-80-35-80-80 40-80 85-80z'/%3E%3Cpath d='M205 160c25 0 40 15 40 35s-20 45-45 45-40-20-40-40 20-40 45-40z'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  pointer-events: none;
+}
+
+.panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 8px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 32px;
+}
+
+.tagline {
+  margin: 0 0 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.card {
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.segmented {
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.segmented button {
+  flex: 1;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented .segActive,
+.segmented .segActive:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.form {
+  display: grid;
+  gap: 14px;
+}
+
+.hint {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.startup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.splash {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  color: var(--muted);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.55;
+  }
+}

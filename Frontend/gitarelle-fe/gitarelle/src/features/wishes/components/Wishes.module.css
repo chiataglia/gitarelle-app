@@ -1,0 +1,615 @@
+/* Sezione "Prossime avventure": stessa palette verde del progetto, ma con il verde menta
+   (--fresh) come accento al posto dell'ambra, per distinguerla dallo storico.
+   Le variabili valgono solo dentro la sezione e i suoi dialog. */
+.board,
+.formLayout,
+.confirmBody {
+  --wish: var(--fresh);
+  --wish-soft: #b5ebc9;
+  --wish-ink: var(--bg);
+  --wish-surface: rgba(20, 56, 38, 0.7);
+  --wish-border: rgba(127, 216, 160, 0.25);
+}
+
+/* pannello largo quanto le altre sezioni */
+.board {
+  padding: 32px 32px 36px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(800px 300px at 100% 0%, rgba(127, 216, 160, 0.08), transparent 70%),
+    linear-gradient(180deg, var(--surface), var(--bg-2));
+  box-shadow: var(--shadow);
+}
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* stessa intestazione delle altre sezioni (.section-head), con l'eyebrow menta invece che ambra */
+.head :global(.section-head) {
+  margin-bottom: 0;
+}
+
+.head :global(.section-head) p {
+  max-width: 620px;
+}
+
+.head :global(.eyebrow) {
+  color: var(--wish);
+}
+
+/* pulsante pieno come btn-primary, ma menta */
+.btnWish {
+  flex: none;
+  background: var(--wish);
+  color: var(--wish-ink);
+  box-shadow: 0 6px 18px rgba(127, 216, 160, 0.22);
+}
+
+.btnWish:hover:not(:disabled) {
+  background: var(--wish-soft);
+}
+
+/* ---------- mappa panoramica ---------- */
+.map {
+  height: var(--map-h);
+  border-color: var(--wish-border);
+}
+
+.mapHint {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(12, 36, 26, 0.88);
+  border: 1px solid var(--wish);
+  pointer-events: none;
+}
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0 16px;
+}
+
+.filter {
+  flex: 1;
+  max-width: 420px;
+  font: inherit;
+  color: var(--text);
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--wish-border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.filter:focus {
+  outline: none;
+  border-color: var(--wish);
+}
+
+.filterCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* ---------- schede "cartolina" ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 170px;
+  padding: 16px 18px 14px;
+  border-radius: 18px;
+  border: 1px dashed var(--wish-border);
+  background: var(--wish-surface);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(127, 216, 160, 0.5);
+}
+
+.cardActive,
+.cardActive:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(242, 165, 65, 0.18), var(--shadow);
+}
+
+.cardSkeleton {
+  cursor: default;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* francobollo con il periodo */
+.stamp {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wish-soft);
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--wish-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.cardTools {
+  display: flex;
+  gap: 4px;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.card:hover .cardTools,
+.card:focus-within .cardTools {
+  opacity: 1;
+}
+
+.toolBtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-content: center;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  color: var(--wish);
+  border-color: var(--wish);
+}
+
+.toolDanger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.card h3 {
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.cardTitle {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.cardTitle:focus-visible {
+  outline: 3px solid rgba(127, 216, 160, 0.5);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.cardNotes {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cardFoot {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  color: var(--wish-ink);
+  background: var(--wish);
+}
+
+.badgeMuted {
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.badgeError {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.linkChip {
+  margin-left: auto;
+  max-width: 60%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wish);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkChip:hover {
+  text-decoration: underline;
+}
+
+.emptyCard {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  font: inherit;
+  color: var(--muted);
+  border-radius: 20px;
+  border: 2px dashed var(--wish-border);
+  background: rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.emptyCard strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--text);
+}
+
+.emptyCard:hover {
+  border-color: var(--wish);
+}
+
+.emptyIcon {
+  color: var(--wish);
+  opacity: 0.8;
+}
+
+.noMatch {
+  padding: 16px 0;
+  color: var(--muted);
+}
+
+/* ---------- dialog: form ---------- */
+.formLayout {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 16px;
+}
+
+.formFields {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 12px;
+}
+
+.formMapCol {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+}
+
+.formMap {
+  min-height: var(--map-h-dialog);
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.formFooter {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.gpxDrop {
+  display: block;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--wish-border);
+  color: var(--wish);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gpxDrop small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.gpxDrop:hover {
+  border-color: var(--wish);
+}
+
+.gpxChip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--wish-border);
+  background: rgba(127, 216, 160, 0.08);
+  font-size: 14px;
+}
+
+.gpxName {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gpxLink {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wish);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.gpxLink:hover {
+  text-decoration: underline;
+}
+
+.coords {
+  position: absolute;
+  z-index: 500;
+  left: 12px;
+  bottom: 12px;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: rgba(12, 36, 26, 0.88);
+  border: 1px solid var(--wish-border);
+  pointer-events: none;
+}
+
+.coordsSet {
+  font-variant-numeric: tabular-nums;
+  border-color: var(--wish);
+  padding-right: 6px;
+  pointer-events: auto;
+}
+
+.coordsClear {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  font: inherit;
+  font-size: 11px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.coordsClear:hover {
+  background: var(--danger);
+  color: var(--accent-ink);
+}
+
+/* ---------- ricerca luogo ---------- */
+.placeSearch {
+  position: relative;
+}
+
+.placeRow {
+  display: flex;
+  gap: 8px;
+}
+
+.placeRow input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.placeRow input:focus {
+  outline: none;
+  border-color: var(--wish);
+}
+
+.placeBtn {
+  flex: none;
+  font: inherit;
+  font-weight: 700;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--wish);
+  color: var(--wish);
+  background: transparent;
+  cursor: pointer;
+}
+
+.placeBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.placeMsg {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.placeResults {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--wish-border);
+  background: var(--surface-2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.placeResults button {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.placeResults button:hover,
+.placeResults button:focus-visible {
+  background: rgba(127, 216, 160, 0.12);
+  outline: none;
+}
+
+.placeResults small {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- dialog: conferma eliminazione ---------- */
+.confirmBody {
+  display: grid;
+  gap: 14px;
+}
+
+.confirmBody p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.confirmCard {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--wish-border);
+  background: rgba(127, 216, 160, 0.08);
+}
+
+.confirmCard small {
+  color: var(--muted);
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .board {
+    padding: 28px 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .formLayout {
+    grid-template-columns: 1fr;
+  }
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .board {
+    padding: 22px 16px 26px;
+  }
+  .filter {
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* sul telefono il pannello arriva fino ai bordi dello schermo: più spazio per mappa e schede */
+  .board {
+    margin: 0 calc(-1 * var(--gutter));
+    padding: 22px var(--gutter) 26px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+  .mapHint {
+    white-space: normal;
+    text-align: center;
+    width: max-content;
+    max-width: 85%;
+  }
+}

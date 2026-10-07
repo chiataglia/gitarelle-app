@@ -37,6 +37,11 @@ public class Trek {
     @JoinColumn(name = "folder_id")
     private Folder folder;
 
+    // proprietario: ogni utente vede solo i propri dati (null solo per dati creati prima del login)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    private AppUser owner;
+
 
     public Long getId() {
         return id;
@@ -108,6 +113,14 @@ public class Trek {
 
     public void setFolder(Folder folder) {
         this.folder = folder;
+    }
+
+    public AppUser getOwner() {
+        return owner;
+    }
+
+    public void setOwner(AppUser owner) {
+        this.owner = owner;
     }
 
     @Override

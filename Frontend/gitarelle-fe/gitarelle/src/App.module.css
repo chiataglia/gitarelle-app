@@ -9,9 +9,9 @@
 }
 
 .headerInner {
-  max-width: 1120px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 12px var(--gutter);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -31,9 +31,11 @@
 .nav {
   display: flex;
   gap: 4px;
+  min-width: 0;
 }
 
 .nav a {
+  flex: none;
   text-decoration: none;
   font-size: 14px;
   font-weight: 600;
@@ -103,17 +105,89 @@
   border-top: 1px solid var(--border);
 }
 
-@media (max-width: 640px) {
+/* utente collegato + "Esci" */
+.account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* avatar + nome: porta alla pagina del profilo */
+.profileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px 3px 3px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.profileLink:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.profileLinkActive {
+  border-color: var(--accent);
+}
+
+.username {
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1024px) {
+  .nav a {
+    padding: 8px 10px;
+  }
+}
+
+/* tablet verticale e telefoni: logo + account sulla prima riga, menu sotto (scorrevole se serve) */
+@media (max-width: 768px) {
   .headerInner {
-    padding: 10px 16px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding-top: 10px;
+    padding-bottom: 6px;
+  }
+  .nav {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -6px;
+  }
+  .nav::-webkit-scrollbar {
+    display: none;
   }
   .nav a {
-    padding: 6px 10px;
+    padding: 6px 12px;
   }
   .hero {
     padding-top: 48px;
   }
   .hero::before {
     display: none;
+  }
+  .hero p {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand {
+    font-size: 20px;
+  }
+  .username {
+    display: none;
+  }
+  .profileLink {
+    padding-right: 3px;
   }
 }

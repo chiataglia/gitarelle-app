@@ -165,7 +165,7 @@
 }
 
 .map {
-  height: 520px;
+  height: var(--map-h);
 }
 
 .mapHint {
@@ -185,20 +185,28 @@
   pointer-events: none;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 768px) {
   .newGrid {
     grid-template-columns: 1fr;
   }
   .saveRow {
     grid-template-columns: 1fr;
   }
-  .map {
-    height: 400px;
-  }
   .mapHint {
     white-space: normal;
     text-align: center;
     width: max-content;
     max-width: 80%;
+  }
+}
+
+@media (max-width: 480px) {
+  .segmented {
+    display: flex;
+    width: 100%;
+  }
+  .segmented button {
+    flex: 1;
+    padding: 8px 10px;
   }
 }

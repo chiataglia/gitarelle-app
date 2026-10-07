@@ -7,6 +7,7 @@ import com.escursioni.gitarelle.entities.Trek;
 import com.escursioni.gitarelle.exceptions.TrekNotFoundException;
 import com.escursioni.gitarelle.repositories.TrekGpxRepository;
 import com.escursioni.gitarelle.repositories.TrekRepository;
+import com.escursioni.gitarelle.security.CurrentUser;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,16 +23,18 @@ public class TrekService {
     private final TrekRepository trekRepository;
     private final TrekGpxRepository trekGpxRepository;
     private final FolderService folderService;
+    private final CurrentUser currentUser;
 
-    public TrekService(TrekRepository trekRepository, TrekGpxRepository trekGpxRepository, FolderService folderService){
+    public TrekService(TrekRepository trekRepository, TrekGpxRepository trekGpxRepository, FolderService folderService, CurrentUser currentUser){
         this.trekRepository = trekRepository;
         this.trekGpxRepository = trekGpxRepository;
         this.folderService = folderService;
+        this.currentUser = currentUser;
     }
 
     public List<TrekResponseDto> findAllTreks(){
         Set<Long> treksWithGpx = new HashSet<>(this.trekGpxRepository.findAllTrekIds());
-        return this.trekRepository.findAll().stream()
+        return this.trekRepository.findAllByOwnerId(this.currentUser.id()).stream()
                 .map(trek -> TrekResponseDto.from(trek, treksWithGpx.contains(trek.getId())))
                 .toList();
     }
@@ -40,13 +43,15 @@ public class TrekService {
         return toResponse(findTrekById(id));
     }
 
+    // solo tra i trek dell'utente corrente: quelli degli altri risultano "non trovati"
     public Trek findTrekById(Long id) {
-        return this.trekRepository.findById(id)
+        return this.trekRepository.findByIdAndOwnerId(id, this.currentUser.id())
                 .orElseThrow(() -> new TrekNotFoundException(id));
     }
 
     public Trek createTrek(@Valid CreateTrekRequestDto requestDto) {
         Trek trek = new Trek();
+        trek.setOwner(this.currentUser.reference());
         applyFields(trek, requestDto);
         return this.trekRepository.save(trek);
     }

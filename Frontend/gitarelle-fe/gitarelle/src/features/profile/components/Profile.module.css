@@ -1,0 +1,407 @@
+/* colore delle barre: verde della palette un passo più scuro del menta, verificato
+   (luminosità e contrasto) sullo sfondo scuro delle card */
+.stats,
+.chart {
+  --chart: #38a36a;
+  --chart-hover: #45b479;
+}
+
+/* ---------- avatar ---------- */
+.avatar {
+  flex: none;
+  display: inline-block;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.avatarInitials {
+  display: inline-grid;
+  place-content: center;
+  font-weight: 800;
+  color: var(--accent-ink);
+  background: var(--fresh);
+}
+
+/* ---------- scheda profilo ---------- */
+.profileCard {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 28px;
+  padding: 24px;
+  align-items: start;
+}
+
+.avatarBlock {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.avatarButton {
+  position: relative;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.avatarButton:focus-visible {
+  outline: 3px solid rgba(242, 165, 65, 0.5);
+  outline-offset: 3px;
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.avatarButton:hover .avatarOverlay,
+.avatarButton:focus-visible .avatarOverlay,
+.avatarButton:disabled .avatarOverlay {
+  opacity: 1;
+}
+
+.avatarActions {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.linkBtn {
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.linkBtn:hover {
+  color: var(--danger);
+}
+
+.profileFields {
+  display: grid;
+  gap: 14px;
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.memberSince {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.profileActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.savedMsg {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+/* ---------- statistiche ---------- */
+.stats {
+  display: grid;
+  gap: 20px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.tile {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface), var(--bg-2));
+}
+
+.tileSkeleton {
+  height: 100px;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+
+.tileLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* numeri in sans (non nel serif dei titoli) */
+.tileValue {
+  font-family: var(--font-body);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.tileHint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.chartCard {
+  padding: 18px 18px 14px;
+}
+
+.chart {
+  margin: 0;
+}
+
+.chartTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+
+.chartEmpty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* colonne */
+.columns {
+  position: relative;
+  height: 160px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding-top: 22px; /* spazio per il valore sopra la colonna più alta */
+  border-bottom: 1px solid var(--border-strong); /* linea di base */
+}
+
+.colSlot {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.colBar {
+  width: 100%;
+  max-width: 24px;
+  border-radius: 4px 4px 0 0; /* arrotondata in cima, dritta sulla base */
+  background: var(--chart);
+  transition: background 0.12s;
+}
+
+.colBarHover {
+  background: var(--chart-hover);
+}
+
+.capValue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  bottom: calc(100% - 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.colAxis {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.colAxis span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* barre orizzontali */
+.barList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.barList li {
+  display: grid;
+  grid-template-columns: minmax(70px, 30%) 1fr auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.barLabel {
+  font-size: 14px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barTrack {
+  height: 14px;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--chart);
+}
+
+.barValue {
+  min-width: 2ch;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* record */
+.records {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.recordCard {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+  align-content: start;
+}
+
+.recordLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.recordCard strong {
+  font-family: var(--font-body);
+  font-size: 22px;
+}
+
+.recordTrek {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.recordLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.recordLink:hover {
+  text-decoration: underline;
+}
+
+.statsEmpty {
+  padding: 20px;
+  border-radius: var(--radius);
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+}
+
+.statsEmpty a {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+  .chartsGrid,
+  .records {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .tiles {
+    gap: 10px;
+  }
+  .tile {
+    padding: 14px;
+  }
+  .profileCard {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+  .row2 {
+    grid-template-columns: 1fr;
+  }
+  .tileValue {
+    font-size: 24px;
+  }
+}

@@ -11,10 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/api/treks")
 public class TrekGpxController {
 
@@ -22,11 +20,6 @@ public class TrekGpxController {
 
     public TrekGpxController(TrekGpxService trekGpxService) {
         this.trekGpxService = trekGpxService;
-    }
-
-    @GetMapping("/gpx")
-    public List<TrekGpx> getAll() {
-        return this.trekGpxService.findAllGpx();
     }
 
     @GetMapping("/{id}/gpx")

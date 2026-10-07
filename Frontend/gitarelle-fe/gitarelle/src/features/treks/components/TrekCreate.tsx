@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { LatLngLiteral } from "leaflet";
-import MapPicker from "./MapPicker";
+import MapPicker from "../../../shared/MapPicker";
 import FolderSelect from "./FolderSelect";
 import styles from "./TrekCreate.module.css";
 import { useTreks } from "../TreksContext";

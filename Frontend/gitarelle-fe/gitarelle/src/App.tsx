@@ -1,61 +1,50 @@
-import GpxViewer from "./features/gpx/components/GpxViewer";
-import TrekCreate from "./features/treks/components/TrekCreate";
-import Trek from "./features/treks/components/TrekList"
+import { Link, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import HomePage from "./HomePage";
+import ProfilePage from "./features/profile/ProfilePage";
+import Avatar from "./features/profile/components/Avatar";
+import { useAuth } from "./features/auth/AuthContext";
+import { displayName } from "./features/auth/api";
+import BrandMark from "./shared/BrandMark";
 import styles from "./App.module.css";
 
 function App() {
+  const { user, logout } = useAuth();
   return (
     <>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <a href="#top" className={styles.brand}>
-            <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
-              <rect width="32" height="32" rx="8" fill="var(--accent)" />
-              <path d="M4 25 L13 10 L18 18 L21 14 L28 25 Z" fill="var(--bg-2)" />
-            </svg>
+          <Link to="/" className={styles.brand}>
+            <BrandMark />
             Gitarelle
-          </a>
+          </Link>
           <nav className={styles.nav}>
-            <a href="#storico">Storico</a>
-            <a href="#nuova">Nuova</a>
-            <a href="#gpx">GPX</a>
+            <Link to="/#storico">Storico</Link>
+            <Link to="/#nuova">Nuova</Link>
+            <Link to="/#gpx">GPX</Link>
+            <Link to="/#idee">Da fare</Link>
           </nav>
+          {user && (
+            <div className={styles.account}>
+              <NavLink
+                to="/profilo"
+                className={({ isActive }) => `${styles.profileLink} ${isActive ? styles.profileLinkActive : ""}`}
+                title="Il tuo profilo"
+              >
+                <Avatar user={user} size={30} />
+                <span className={styles.username}>{displayName(user)}</span>
+              </NavLink>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>Esci</button>
+            </div>
+          )}
         </div>
       </header>
 
       <div className="app-container" id="top">
-        <section className={styles.hero}>
-          <span className="eyebrow">Diario di escursioni</span>
-          <h1>
-            Ogni sentiero,<br />
-            <em>una storia da ricordare.</em>
-          </h1>
-          <p>
-            Segna dove sei stato, con chi e cosa hai visto. Carica la traccia GPX e
-            ritrova il percorso sulla mappa quando vuoi.
-          </p>
-          <div className={styles.heroActions}>
-            <a href="#nuova" className="btn btn-primary">+ Nuova escursione</a>
-            <a href="#storico" className="btn btn-ghost">Sfoglia lo storico</a>
-          </div>
-        </section>
-
-        <section id="storico" className="section">
-          <Trek />
-        </section>
-
-        <section id="nuova" className="section">
-          <TrekCreate />
-        </section>
-
-        <section id="gpx" className="section">
-          <div className="section-head">
-            <span className="eyebrow">Tracce</span>
-            <h2>Carica un GPX</h2>
-            <p>Trascina il file, controlla il percorso e crea subito l'escursione, oppure collegalo a una già esistente.</p>
-          </div>
-          <GpxViewer />
-        </section>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/profilo" element={<ProfilePage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
 
       <footer className={styles.footer}>

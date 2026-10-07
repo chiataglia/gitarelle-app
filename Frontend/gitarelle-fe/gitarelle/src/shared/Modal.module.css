@@ -1,6 +1,9 @@
 .dialog {
   width: min(460px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px); /* sui telefoni esclude le barre del browser */
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0;
   color: var(--text);
   background: linear-gradient(180deg, var(--surface), var(--bg-2));
@@ -63,8 +66,20 @@
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .inner {
     padding: 16px;
+  }
+}
+
+/* telefono: il dialog occupa quasi tutto lo schermo */
+@media (max-width: 480px) {
+  .dialog,
+  .wide {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+  .header h3 {
+    font-size: 19px;
   }
 }
