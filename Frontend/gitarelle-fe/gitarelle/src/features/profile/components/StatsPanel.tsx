@@ -32,7 +32,7 @@ export default function StatsPanel() {
   if (stats.totalTreks === 0) {
     return (
       <div className={styles.statsEmpty}>
-        Ancora nessuna escursione nel diario: le statistiche appariranno qui. <Link to="/#nuova">Aggiungi la prima →</Link>
+        Ancora nessuna escursione nel diario: le statistiche appariranno qui. <Link to="/nuova">Aggiungi la prima →</Link>
       </div>
     );
   }
@@ -93,7 +93,7 @@ export default function StatsPanel() {
         <div className={`card ${styles.recordCard}`}>
           <span className={styles.recordLabel}>Ancora da fare</span>
           <strong>{plural(stats.totalWishes, "idea", "idee")}</strong>
-          <Link to="/#idee" className={styles.recordLink}>Vai alla lista →</Link>
+          <Link to="/idee" className={styles.recordLink}>Vai alla lista →</Link>
         </div>
       </div>
     </div>
