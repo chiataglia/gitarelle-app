@@ -45,7 +45,7 @@ export default function HomePage() {
         <div className="section-head">
           <span className="eyebrow">Tracce</span>
           <h2>Carica un GPX</h2>
-          <p>Trascina il file, controlla il percorso e crea subito l'escursione, oppure collegalo a una già esistente.</p>
+          <p>Trascina il file, controlla il percorso e crea subito l'escursione, oppure collegalo a una già esistente. Puoi anche caricare più GPX insieme.</p>
         </div>
         <GpxViewer />
       </section>

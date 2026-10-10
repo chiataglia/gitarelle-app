@@ -9,6 +9,8 @@ import { parseGpx, type ParsedGpx } from "../../../shared/gpx";
 import { errorMessage } from "../../../shared/api";
 import TrackLayer from "../../../shared/TrackLayer";
 import FolderSelect from "../../treks/components/FolderSelect";
+import GpxBulkImport from "./GpxBulkImport";
+import { readGpxFiles, type BulkItem } from "../bulk";
 import styles from "./GpxViewer.module.css";
 
 type Mode = "new" | "existing";
@@ -37,6 +39,7 @@ export default function GpxViewer() {
   const [saveOk, setSaveOk] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [bulkItems, setBulkItems] = useState<BulkItem[] | null>(null);
 
   const center: [number, number] = [41.944, 12.456];
 
@@ -45,16 +48,22 @@ export default function GpxViewer() {
     : Boolean(selectedTrekId);
 
   async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) await loadFile(file);
+    const files = Array.from(e.target.files ?? []);
     e.target.value = ""; // permette di ricaricare lo stesso file dopo un reset
+    await loadFiles(files);
   }
 
   function onDrop(e: React.DragEvent<HTMLLabelElement>) {
     e.preventDefault();
     setDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) loadFile(file);
+    loadFiles(Array.from(e.dataTransfer.files ?? []));
+  }
+
+  // un file: form completo qui sotto; più file: revisione in blocco
+  async function loadFiles(files: File[]) {
+    const gpxFiles = files.filter((f) => /\.gpx$/i.test(f.name));
+    if (gpxFiles.length === 1) await loadFile(gpxFiles[0]);
+    else if (gpxFiles.length > 1) setBulkItems(await readGpxFiles(gpxFiles, treks, today));
   }
 
   async function loadFile(file: File) {
@@ -121,6 +130,10 @@ export default function GpxViewer() {
     setSaveError(null);
   }
 
+  if (bulkItems) {
+    return <GpxBulkImport items={bulkItems} onClose={() => setBulkItems(null)} />;
+  }
+
   return (
     <div className={styles.wrapper}>
       {!gpx ? (
@@ -130,9 +143,9 @@ export default function GpxViewer() {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
         >
-          <input type="file" accept=".gpx" onChange={onPickFile} className={styles.fileInput} />
+          <input type="file" accept=".gpx" multiple onChange={onPickFile} className={styles.fileInput} />
           <span className={styles.dropIcon} aria-hidden="true">⤒</span>
-          <strong>Trascina qui il file .gpx</strong>
+          <strong>Trascina qui uno o più file .gpx</strong>
           <span>oppure <u>sfoglia</u> dal computer</span>
         </label>
       ) : (

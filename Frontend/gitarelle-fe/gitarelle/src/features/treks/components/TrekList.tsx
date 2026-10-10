@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import type { LatLngLiteral } from "leaflet";
 import type { FolderFilter, Trek } from "../types";
 import TrekMap from "./TrekMap";
-import TrekCompareMap, { type CompareItem } from "./TrekCompareMap";
+import TrekClusterMap, { TRACK_ZOOM, type ClusterItem, type MapView } from "./TrekClusterMap";
 import TrekEditDialog from "./TrekEditDialog";
 import TrekDeleteDialog from "./TrekDeleteDialog";
 import FolderBar from "./FolderBar";
@@ -20,18 +20,16 @@ const pointOf = (t: Trek): LatLngLiteral | null =>
 
 type Mode = "detail" | "compare";
 
-// trek scelto per il confronto, col colore assegnato al momento della selezione
-// (così togliendone uno gli altri non cambiano colore)
-type Compared = { id: Trek["id"]; color: string };
-
-function nextColor(used: Compared[]) {
-  return TRACK_PALETTE.find((c) => !used.some((u) => u.color === c))
-    ?? TRACK_PALETTE[used.length % TRACK_PALETTE.length];
+// colore fisso per trek (dall'id): togliendone o aggiungendone uno gli altri non cambiano colore
+function colorOf(id: Trek["id"]) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TRACK_PALETTE[h % TRACK_PALETTE.length];
 }
 
 export default function TrekList() {
   const { treks, folders, loading, error, upsertTrek } = useTreks();
-  const [mode, setMode] = useState<Mode>("detail");
+  const [mode, setMode] = useState<Mode>("compare");
 
   // filtro per cartella: lista, dettaglio e confronto mostrano solo i trek visibili
   const [folderFilter, setFolderFilter] = useState<FolderFilter>("all");
@@ -44,16 +42,20 @@ export default function TrekList() {
   const [selectedId, setSelectedId] = useState<Trek["id"] | null>(null);
   const selected = visibleTreks.find((t) => t.id === selectedId) ?? null;
 
-  // trek da confrontare sulla stessa mappa (quelli fuori dal filtro restano scelti ma nascosti)
-  const [compared, setCompared] = useState<Compared[]>([]);
-  const comparedTreks = compared
-    .map((c) => ({ ...c, trek: visibleTreks.find((t) => t.id === c.id) }))
-    .filter((c): c is Compared & { trek: Trek } => c.trek != null);
+  // confronto: tutti i trek sono sulla mappa tranne quelli tolti a mano (così anche i nuovi compaiono subito)
+  const [hidden, setHidden] = useState<Set<Trek["id"]>>(new Set());
+  const comparedTreks = visibleTreks.filter((t) => !hidden.has(t.id) && (t.hasGpx || pointOf(t)));
 
-  // tracce gpx da scaricare: quella del trek selezionato o quelle del confronto
+  // zoom e area inquadrata dalla mappa del confronto
+  const [view, setView] = useState<MapView | null>(null);
+  const zoomedIn = view != null && view.zoom >= TRACK_ZOOM;
+  const inView = (p: LatLngLiteral | null | undefined) => zoomedIn && p != null && view.bounds.pad(0.5).contains(p);
+
+  // tracce gpx da scaricare: quella del trek selezionato, oppure nel confronto quelle inquadrate
+  // (più quelle dei trek senza punto, che servono per sapere dove metterli sulla mappa)
   const gpxIds = mode === "detail"
     ? (selected?.hasGpx ? [selected.id] : [])
-    : comparedTreks.filter((c) => c.trek.hasGpx).map((c) => c.id);
+    : comparedTreks.filter((t) => t.hasGpx && (!pointOf(t) || inView(pointOf(t)))).map((t) => t.id);
   const gpxTracks = useGpxTracks(gpxIds, fetchGpxText);
 
   // trek aperti nei dialog di modifica / eliminazione
@@ -81,18 +83,20 @@ export default function TrekList() {
   }
 
   function toggleCompared(t: Trek) {
-    setCompared((prev) =>
-      prev.some((c) => c.id === t.id)
-        ? prev.filter((c) => c.id !== t.id)
-        : [...prev, { id: t.id, color: nextColor(prev) }]
-    );
+    setHidden((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(t.id)) next.add(t.id);
+      return next;
+    });
   }
 
-  function compareAllWithGpx() {
-    setCompared((prev) => {
-      const next = [...prev];
+  // "Tutti" / "Deseleziona" valgono per i trek della cartella attiva
+  function showAllVisible(show: boolean) {
+    setHidden((prev) => {
+      const next = new Set(prev);
       for (const t of visibleTreks) {
-        if (t.hasGpx && !next.some((c) => c.id === t.id)) next.push({ id: t.id, color: nextColor(next) });
+        if (show) next.delete(t.id);
+        else next.add(t.id);
       }
       return next;
     });
@@ -100,7 +104,6 @@ export default function TrekList() {
 
   function onDeleted(id: Trek["id"]) {
     setDeletingId(null);
-    setCompared((prev) => prev.filter((c) => c.id !== id));
     if (selectedId === id) {
       setSelectedId(null);
       setPicking(false);
@@ -118,10 +121,6 @@ export default function TrekList() {
     setMode(m);
     setPicking(false);
     setDraftPoint(null);
-    // entrando nel confronto si parte dal trek che si stava guardando
-    if (m === "compare" && comparedTreks.length === 0 && selected && (selected.hasGpx || pointOf(selected))) {
-      setCompared([{ id: selected.id, color: TRACK_PALETTE[0] }]);
-    }
   }
 
   function startPicking() {
@@ -163,13 +162,22 @@ export default function TrekList() {
   const selectedPoint = selected ? pointOf(selected) : null;
   const comparing = mode === "compare";
 
-  const compareItems: CompareItem[] = comparedTreks.map((c) => ({
-    key: String(c.id),
-    label: c.trek.title,
-    color: c.color,
-    gpx: c.trek.hasGpx ? gpxTracks.trackOf(c.id) : null,
-    point: pointOf(c.trek),
-  }));
+  const showableCount = visibleTreks.filter((t) => t.hasGpx || pointOf(t)).length;
+
+  // pin di tutti i trek del confronto; il pin dei trek senza punto è la partenza del gpx
+  const compareItems: (ClusterItem & { trek: Trek })[] = comparedTreks.map((t) => {
+    const gpx = t.hasGpx ? gpxTracks.trackOf(t.id) : null;
+    return {
+      key: String(t.id),
+      label: t.title,
+      color: colorOf(t.id),
+      gpx,
+      point: pointOf(t) ?? gpx?.info.start ?? null,
+      trek: t,
+    };
+  });
+  // da vicino: tracce (o stato di caricamento) dei trek inquadrati
+  const trackItems = compareItems.filter((i) => i.trek.hasGpx && inView(i.point));
 
   return (
     <div>
@@ -199,9 +207,11 @@ export default function TrekList() {
           </div>
           {comparing && (
             <div className={styles.toolbarActions}>
-              <span className={styles.counter}>{comparedTreks.length} selezionati</span>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={compareAllWithGpx}>Tutti con GPX</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCompared([])} disabled={comparedTreks.length === 0}>
+              <span className={styles.counter}>{comparedTreks.length} sulla mappa</span>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => showAllVisible(true)} disabled={comparedTreks.length === showableCount}>
+                Tutti
+              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => showAllVisible(false)} disabled={comparedTreks.length === 0}>
                 Deseleziona
               </button>
             </div>
@@ -230,9 +240,9 @@ export default function TrekList() {
 
           <ul className={styles.list}>
             {visibleTreks.map((t) => {
-              const compareColor = compared.find((c) => c.id === t.id)?.color;
-              const active = comparing ? compareColor != null : selectedId === t.id;
               const nothingToShow = !t.hasGpx && !pointOf(t);
+              const compareColor = !hidden.has(t.id) && !nothingToShow ? colorOf(t.id) : undefined;
+              const active = comparing ? compareColor != null : selectedId === t.id;
               return (
                 <li key={t.id} className={styles.row}>
                   <button
@@ -284,29 +294,32 @@ export default function TrekList() {
           {comparing ? (
             compareItems.length > 0 ? (
               <>
-                <TrekCompareMap items={compareItems} />
-                <ul className={styles.legend} aria-label="Legenda percorsi">
-                  {comparedTreks.map((c) => {
-                    const status = !c.trek.hasGpx
-                      ? "solo punto"
-                      : gpxTracks.errorOf(c.id)
+                <TrekClusterMap items={compareItems} tracks={trackItems} fitKey={String(folderFilter)} onViewChange={setView} />
+                {!zoomedIn && view && (
+                  <div className={styles.mapHint}>Zooma su un gruppo per vedere le tracce</div>
+                )}
+                {zoomedIn && trackItems.length > 0 && (
+                  <ul className={styles.legend} aria-label="Legenda percorsi">
+                    {trackItems.map(({ key, color, trek }) => {
+                      const status = gpxTracks.errorOf(trek.id)
                         ? "errore GPX"
-                        : gpxTracks.isLoading(c.id)
+                        : gpxTracks.isLoading(trek.id)
                           ? "caricamento..."
                           : null;
-                    return (
-                      <li key={c.id}>
-                        <span className={styles.swatch} style={{ background: c.color }} aria-hidden="true" />
-                        <span className={styles.legendTitle} title={c.trek.title}>{c.trek.title}</span>
-                        {c.trek.trekDate && <small>{formatDate(c.trek.trekDate)}</small>}
-                        {status && <small className={styles.legendStatus}>· {status}</small>}
-                        <button type="button" className={styles.legendRemove} onClick={() => toggleCompared(c.trek)} aria-label={`Togli ${c.trek.title} dal confronto`}>
-                          ✕
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
+                      return (
+                        <li key={key}>
+                          <span className={styles.swatch} style={{ background: color }} aria-hidden="true" />
+                          <span className={styles.legendTitle} title={trek.title}>{trek.title}</span>
+                          {trek.trekDate && <small>{formatDate(trek.trekDate)}</small>}
+                          {status && <small className={styles.legendStatus}>· {status}</small>}
+                          <button type="button" className={styles.legendRemove} onClick={() => toggleCompared(trek)} aria-label={`Togli ${trek.title} dal confronto`}>
+                            ✕
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </>
             ) : (
               <div className={styles.placeholder}>

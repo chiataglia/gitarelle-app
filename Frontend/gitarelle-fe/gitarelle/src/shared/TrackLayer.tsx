@@ -20,11 +20,12 @@ type Props = {
   label?: string;  // tooltip su traccia e pin (utile con più tracce)
   fit?: boolean;   // false quando è la mappa a inquadrare più tracce insieme
   dashed?: boolean; // tratteggiata (es. percorso ancora da fare)
+  pin?: boolean;    // false quando il pin lo disegna già qualcun altro (es. i gruppi della mappa storico)
   onClick?: () => void; // click su traccia o pin
 };
 
 // Traccia gpx + pin sul punto di partenza, da mettere dentro un <MapContainer>
-export default function TrackLayer({ gpx, trackKey, color, label, fit = true, dashed, onClick }: Props) {
+export default function TrackLayer({ gpx, trackKey, color, label, fit = true, dashed, pin = true, onClick }: Props) {
   const stroke = color ?? TRACK_COLOR;
   const dashArray = dashed ? "2 10" : undefined;
   const eventHandlers = onClick ? { click: onClick } : undefined;
@@ -44,7 +45,7 @@ export default function TrackLayer({ gpx, trackKey, color, label, fit = true, da
       >
         {label && <Tooltip sticky>{label}</Tooltip>}
       </GeoJSON>
-      {gpx.info.start && (
+      {pin && gpx.info.start && (
         <Marker position={gpx.info.start} icon={color ? pinIconFor(color) : pinIcon} eventHandlers={eventHandlers}>
           {label && <Tooltip direction="top" offset={[0, -30]}>{label}</Tooltip>}
         </Marker>

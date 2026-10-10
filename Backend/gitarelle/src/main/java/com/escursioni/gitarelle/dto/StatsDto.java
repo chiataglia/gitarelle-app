@@ -15,6 +15,7 @@ public record StatsDto(
         LocalDate lastTrekDate,
         List<YearStat> byYear,     // anni consecutivi dal primo all'ultimo (anche quelli a zero)
         List<Integer> byMonth,     // 12 valori, gennaio → dicembre, sommati su tutti gli anni
+        List<MonthStat> byYearMonth, // mesi consecutivi dal primo all'ultimo trek (anche quelli a zero)
         List<NameCount> topCompanions,
         List<NameCount> topFolders,
         TrekRecord longestTrek,
@@ -23,7 +24,10 @@ public record StatsDto(
         int totalWishes
 ) {
 
-    public record YearStat(int year, int treks, double distanceKm) {}
+    public record YearStat(int year, int treks, double distanceKm, long elevationGainM) {}
+
+    // month: "2025-03"
+    public record MonthStat(String month, int treks, double distanceKm, long elevationGainM) {}
 
     public record NameCount(String name, int count) {}
 

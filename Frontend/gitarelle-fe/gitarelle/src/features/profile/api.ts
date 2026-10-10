@@ -3,6 +3,7 @@ import type { User } from "../auth/api";
 
 export type NameCount = { name: string; count: number };
 export type TrekRecord = { id: number; title: string; date: string | null; value: number };
+export type MonthStat = { month: string; treks: number; distanceKm: number; elevationGainM: number }; // month: "2025-03"
 
 // Statistiche del diario (distanze e dislivelli solo dai trek con gpx)
 export type Stats = {
@@ -14,8 +15,9 @@ export type Stats = {
   averageDistanceKm: number | null;
   firstTrekDate: string | null;
   lastTrekDate: string | null;
-  byYear: { year: number; treks: number; distanceKm: number }[];
+  byYear: { year: number; treks: number; distanceKm: number; elevationGainM: number }[];
   byMonth: number[]; // 12 valori, gennaio → dicembre
+  byYearMonth: MonthStat[]; // mesi consecutivi dal primo all'ultimo trek
   topCompanions: NameCount[];
   topFolders: NameCount[];
   longestTrek: TrekRecord | null;

@@ -1,6 +1,7 @@
 package com.escursioni.gitarelle.services;
 
 import com.escursioni.gitarelle.dto.StatsDto;
+import com.escursioni.gitarelle.dto.StatsDto.MonthStat;
 import com.escursioni.gitarelle.dto.StatsDto.NameCount;
 import com.escursioni.gitarelle.dto.StatsDto.TrekRecord;
 import com.escursioni.gitarelle.dto.StatsDto.YearStat;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -54,6 +56,9 @@ public class StatsService {
         TrekRecord longest = null, climb = null;
         Map<Integer, int[]> treksPerYear = new TreeMap<>();
         Map<Integer, Double> kmPerYear = new HashMap<>();
+        Map<Integer, Double> gainPerYear = new HashMap<>();
+        // per mese: [escursioni, km, dislivello]
+        Map<YearMonth, double[]> perYearMonth = new HashMap<>();
         int[] byMonth = new int[12];
         LocalDate first = null, last = null;
 
@@ -70,6 +75,11 @@ public class StatsService {
             if (d != null) {
                 treksPerYear.computeIfAbsent(d.getYear(), y -> new int[1])[0]++;
                 kmPerYear.merge(d.getYear(), km, Double::sum);
+                gainPerYear.merge(d.getYear(), gain, Double::sum);
+                double[] ym = perYearMonth.computeIfAbsent(YearMonth.from(d), k -> new double[3]);
+                ym[0]++;
+                ym[1] += km;
+                ym[2] += gain;
                 byMonth[d.getMonthValue() - 1]++;
                 if (first == null || d.isBefore(first)) first = d;
                 if (last == null || d.isAfter(last)) last = d;
@@ -82,7 +92,16 @@ public class StatsService {
             int from = Collections.min(treksPerYear.keySet()), to = Collections.max(treksPerYear.keySet());
             for (int y = from; y <= to; y++) {
                 int count = treksPerYear.containsKey(y) ? treksPerYear.get(y)[0] : 0;
-                byYear.add(new YearStat(y, count, round1(kmPerYear.getOrDefault(y, 0d))));
+                byYear.add(new YearStat(y, count, round1(kmPerYear.getOrDefault(y, 0d)), Math.round(gainPerYear.getOrDefault(y, 0d))));
+            }
+        }
+
+        // stessa cosa per i mesi: serie continua per i grafici nel tempo
+        List<MonthStat> byYearMonth = new ArrayList<>();
+        if (first != null) {
+            for (YearMonth ym = YearMonth.from(first); !ym.isAfter(YearMonth.from(last)); ym = ym.plusMonths(1)) {
+                double[] v = perYearMonth.getOrDefault(ym, new double[3]);
+                byYearMonth.add(new MonthStat(ym.toString(), (int) v[0], round1(v[1]), Math.round(v[2])));
             }
         }
 
@@ -105,6 +124,7 @@ public class StatsService {
                 last,
                 byYear,
                 Arrays.stream(byMonth).boxed().toList(),
+                byYearMonth,
                 top(countCompanions(treks)),
                 top(perFolder),
                 longest != null ? new TrekRecord(longest.id(), longest.title(), longest.date(), round1(longest.value())) : null,
