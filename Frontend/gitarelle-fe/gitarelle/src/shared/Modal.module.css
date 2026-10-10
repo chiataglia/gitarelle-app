@@ -25,6 +25,11 @@
   width: min(920px, calc(100vw - 32px));
 }
 
+/* per finestre con una mappa grande (es. disegno di un percorso) */
+.xl {
+  width: min(1320px, calc(100vw - 32px));
+}
+
 .inner {
   padding: 20px 22px 22px;
 }
@@ -43,6 +48,8 @@
 
 .close {
   flex: none;
+  display: grid;
+  place-items: center;
   width: 32px;
   height: 32px;
   border: none;
@@ -75,7 +82,8 @@
 /* telefono: il dialog occupa quasi tutto lo schermo */
 @media (max-width: 480px) {
   .dialog,
-  .wide {
+  .wide,
+  .xl {
     width: calc(100vw - 16px);
     max-height: calc(100dvh - 16px);
   }

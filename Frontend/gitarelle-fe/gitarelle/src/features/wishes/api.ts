@@ -18,8 +18,8 @@ export const updateWish = (id: Wish["id"], payload: WishPayload) =>
 export const deleteWish = (id: Wish["id"]) =>
   apiFetch(`/wishes/${id}`, { method: "DELETE" }).then(() => undefined);
 
-export async function fetchWishGpxText(id: Wish["id"] | string) {
-  const res = await apiFetch(`/wishes/${id}/gpx`);
+export async function fetchWishGpxText(id: Wish["id"] | string, signal?: AbortSignal) {
+  const res = await apiFetch(`/wishes/${id}/gpx`, { signal });
   return res.text();
 }
 

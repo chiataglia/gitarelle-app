@@ -42,11 +42,10 @@ public class TrekGpxService {
 
     // Crea trek e gpx insieme: se il salvataggio del gpx fallisce viene annullato anche il trek
     @Transactional
-    public Trek createTrekWithGpx(CreateTrekRequestDto trekDto, String gpxTitle, MultipartFile file) {
+    public TrekGpx createTrekWithGpx(CreateTrekRequestDto trekDto, String gpxTitle, MultipartFile file) {
         checkNotEmpty(file);
         Trek trek = trekService.createTrek(trekDto);
-        trekGpxRepository.save(buildGpx(trek, gpxTitle, file));
-        return trek;
+        return trekGpxRepository.save(buildGpx(trek, gpxTitle, file));
     }
 
     private void checkNotEmpty(MultipartFile file) {

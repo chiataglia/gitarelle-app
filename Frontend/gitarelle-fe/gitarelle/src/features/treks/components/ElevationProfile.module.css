@@ -1,0 +1,127 @@
+.chart {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.range {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.wrap {
+  position: relative;
+  min-height: 200px;
+  touch-action: pan-y; /* su touch il dito scorre il grafico senza bloccare lo scroll verticale */
+}
+
+.wrap svg {
+  display: block;
+  cursor: crosshair;
+}
+
+.grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  font-size: 11px;
+  fill: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.crosshair {
+  stroke: var(--text);
+  stroke-opacity: 0.5;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.dot {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  top: 8px;
+  display: grid;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  background: rgba(12, 36, 26, 0.92);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow);
+}
+
+.tooltip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+/* scala colori della pendenza */
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.legendBar {
+  flex: 1;
+  max-width: 260px;
+  display: grid;
+  gap: 3px;
+  padding-top: 3px;
+}
+
+.legendBar > div:first-child {
+  height: 8px;
+  border-radius: 999px;
+}
+
+.legendTicks {
+  position: relative;
+  height: 14px;
+}
+
+.legendTicks span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.legendTicks span:first-child {
+  transform: none;
+}

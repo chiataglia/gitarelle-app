@@ -33,15 +33,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="storico" className="section">
+      <section id="storico" className="section section-screen">
         <Trek />
       </section>
 
-      <section id="nuova" className="section">
+      <section id="nuova" className="section section-screen">
         <TrekCreate />
       </section>
 
-      <section id="gpx" className="section">
+      <section id="gpx" className="section section-screen">
         <div className="section-head">
           <span className="eyebrow">Tracce</span>
           <h2>Carica un GPX</h2>
@@ -50,7 +50,7 @@ export default function HomePage() {
         <GpxViewer />
       </section>
 
-      <section id="idee" className="section">
+      <section id="idee" className="section section-screen">
         <WishBoard />
       </section>
     </>

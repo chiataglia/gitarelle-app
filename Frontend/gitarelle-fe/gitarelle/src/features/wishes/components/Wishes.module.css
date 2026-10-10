@@ -3,6 +3,7 @@
    Le variabili valgono solo dentro la sezione e i suoi dialog. */
 .board,
 .formLayout,
+.viewLayout,
 .confirmBody {
   --wish: var(--fresh);
   --wish-soft: #b5ebc9;
@@ -11,15 +12,19 @@
   --wish-border: rgba(127, 216, 160, 0.25);
 }
 
-/* pannello largo quanto le altre sezioni */
-.board {
-  padding: 32px 32px 36px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background:
-    radial-gradient(800px 300px at 100% 0%, rgba(127, 216, 160, 0.08), transparent 70%),
-    linear-gradient(180deg, var(--surface), var(--bg-2));
-  box-shadow: var(--shadow);
+/* ---------- scheda di un'idea ---------- */
+.viewLink {
+  color: var(--wish);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.viewNotes {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-line; /* mantiene gli a capo scritti nelle note */
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .head {
@@ -53,6 +58,210 @@
 
 .btnWish:hover:not(:disabled) {
   background: var(--wish-soft);
+}
+
+/* ---------- lista a sinistra, mappa a destra (come lo storico) ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: var(--list-col) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* minmax(0, 1fr): un nome lungo non allarga la colonna oltre la sua larghezza */
+.listCol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  max-height: var(--map-h);
+  overflow-y: auto;
+  padding: 2px 6px 2px 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.row {
+  position: relative;
+}
+
+/* riquadro di un'idea: come quelli dei trek, ma tratteggiato (percorso ancora da fare) */
+.item {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  font: inherit;
+  color: var(--text);
+  padding: 10px 12px;
+  padding-right: calc(var(--tools, 2) * 34px + 14px); /* spazio per i bottoni sopra il riquadro */
+  border-radius: 14px;
+  background: var(--wish-surface);
+  border: 1px dashed var(--wish-border);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(127, 216, 160, 0.5);
+}
+
+.item:focus-visible {
+  outline: 3px solid rgba(127, 216, 160, 0.5);
+  outline-offset: 2px;
+}
+
+/* selezionata: ambra come la sua traccia sulla mappa */
+.itemActive,
+.itemActive:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  background: linear-gradient(90deg, rgba(242, 165, 65, 0.16), var(--wish-surface));
+}
+
+/* al posto della data dei trek: che cosa c'è (traccia, punto o solo l'idea) */
+.kind {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-content: center;
+  border-radius: 10px;
+  color: var(--wish);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px dashed var(--wish-border);
+}
+
+.itemActive .kind {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.itemBody {
+  flex: 1;
+  min-width: 0;
+}
+
+/* titolo fino a due righe, poi "…" */
+.itemTitle {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* il titolo apre la scheda dell'idea */
+.itemTitleLink {
+  cursor: pointer;
+  text-decoration: underline transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.itemTitleLink:hover {
+  text-decoration-color: currentColor;
+}
+
+.itemMeta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* dislivello e distanza, impilati a destra (come nello storico) */
+.metrics {
+  margin-left: auto;
+  flex: none;
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.metrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.metrics svg {
+  color: var(--wish);
+}
+
+.tools {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+  transition: transform 0.15s;
+}
+
+/* segue il piccolo sollevamento del riquadro al passaggio del mouse */
+.row:hover .tools {
+  transform: translateY(calc(-50% - 2px));
+}
+
+.toolBtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-content: center;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+}
+
+.toolBtn:hover {
+  color: var(--wish);
+  border-color: var(--wish);
+}
+
+.toolDanger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.badgeError {
+  margin-left: auto;
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.skeleton {
+  height: 66px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
 }
 
 /* ---------- mappa panoramica ---------- */
@@ -104,174 +313,6 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--muted);
-}
-
-/* ---------- schede "cartolina" ---------- */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-}
-
-.card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 170px;
-  padding: 16px 18px 14px;
-  border-radius: 18px;
-  border: 1px dashed var(--wish-border);
-  background: var(--wish-surface);
-  backdrop-filter: blur(6px);
-  cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(127, 216, 160, 0.5);
-}
-
-.cardActive,
-.cardActive:hover {
-  border-style: solid;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(242, 165, 65, 0.18), var(--shadow);
-}
-
-.cardSkeleton {
-  cursor: default;
-  background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.2s linear infinite;
-}
-
-.cardTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-/* francobollo con il periodo */
-.stamp {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--wish-soft);
-  padding: 3px 10px;
-  border-radius: 6px;
-  border: 1px dashed var(--wish-border);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70%;
-}
-
-.cardTools {
-  display: flex;
-  gap: 4px;
-  opacity: 0.75;
-  transition: opacity 0.15s;
-}
-
-.card:hover .cardTools,
-.card:focus-within .cardTools {
-  opacity: 1;
-}
-
-.toolBtn {
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-content: center;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  color: var(--muted);
-  background: rgba(0, 0, 0, 0.25);
-  cursor: pointer;
-}
-
-.toolBtn:hover {
-  color: var(--wish);
-  border-color: var(--wish);
-}
-
-.toolDanger:hover {
-  color: var(--danger);
-  border-color: var(--danger);
-}
-
-.card h3 {
-  font-size: 21px;
-  line-height: 1.2;
-}
-
-.cardTitle {
-  all: unset;
-  cursor: pointer;
-  font-family: var(--font-display);
-}
-
-.cardTitle:focus-visible {
-  outline: 3px solid rgba(127, 216, 160, 0.5);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-.cardNotes {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.cardFoot {
-  margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.badge {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  padding: 3px 9px;
-  border-radius: 999px;
-  color: var(--wish-ink);
-  background: var(--wish);
-}
-
-.badgeMuted {
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.badgeError {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--danger);
-}
-
-.linkChip {
-  margin-left: auto;
-  max-width: 60%;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--wish);
-  text-decoration: none;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.linkChip:hover {
-  text-decoration: underline;
 }
 
 .emptyCard {
@@ -569,12 +610,6 @@
   }
 }
 
-@media (max-width: 1024px) {
-  .board {
-    padding: 28px 24px 32px;
-  }
-}
-
 @media (max-width: 768px) {
   .formLayout {
     grid-template-columns: 1fr;
@@ -583,8 +618,11 @@
     flex-direction: column;
     align-items: flex-start;
   }
-  .board {
-    padding: 22px 16px 26px;
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .listCol {
+    max-height: 320px;
   }
   .filter {
     max-width: none;
@@ -592,17 +630,6 @@
 }
 
 @media (max-width: 480px) {
-  /* sul telefono il pannello arriva fino ai bordi dello schermo: più spazio per mappa e schede */
-  .board {
-    margin: 0 calc(-1 * var(--gutter));
-    padding: 22px var(--gutter) 26px;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
-  .grid {
-    grid-template-columns: 1fr;
-  }
   .formRow {
     grid-template-columns: 1fr;
   }

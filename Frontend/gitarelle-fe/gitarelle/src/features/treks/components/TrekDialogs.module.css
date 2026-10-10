@@ -31,6 +31,196 @@
   grid-column: 1 / -1;
 }
 
+/* profilo altimetrico sotto info e mappa della scheda */
+.profile {
+  min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- scheda in sola lettura ---------- */
+.facts {
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+/* icona + valore (l'etichetta resta per gli screen reader e nel tooltip) */
+.facts > div,
+.notes {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.facts > div {
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.facts dt,
+.notes > svg {
+  display: flex;
+  padding-top: 3px; /* allinea l'icona alla prima riga di testo */
+  color: var(--fresh);
+}
+
+.notes > svg {
+  box-sizing: content-box;
+}
+
+.facts dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.factEmpty {
+  color: var(--muted);
+  font-weight: 400 !important;
+}
+
+.readOnly {
+  display: block;
+  padding: 2px 0;
+}
+
+/* valore cliccabile: sembra testo, al passaggio del mouse si evidenzia e compare la matita.
+   Il margine negativo compensa il padding, così il testo resta allineato alle icone */
+.factValue {
+  width: calc(100% + 16px);
+  margin: -2px -8px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: text;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.factValue > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.factValue > svg {
+  flex: none;
+  margin-top: 4px;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.factValue:hover,
+.factValue:focus-visible {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
+  outline: none;
+}
+
+.factValue:hover > svg,
+.factValue:focus-visible > svg {
+  opacity: 1;
+}
+
+/* touch: niente hover, la matita resta sempre visibile */
+@media (hover: none) {
+  .factValue > svg {
+    opacity: 0.6;
+  }
+}
+
+.titleValue {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+  margin: -4px 0 -4px -8px;
+}
+
+.titleValue > svg {
+  margin-top: 8px;
+}
+
+/* stesso aspetto del titolo del Modal */
+.titleText {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+@media (max-width: 480px) {
+  .titleText {
+    font-size: 19px;
+  }
+}
+
+.notesValue > span {
+  font-size: 14px;
+  font-weight: 400;
+  white-space: pre-line; /* mantiene gli a capo scritti nelle note */
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.inlineInput {
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 5px 8px;
+  margin: -4px 0;
+  outline: none;
+}
+
+textarea.inlineInput {
+  margin: 0;
+  resize: vertical;
+}
+
+.titleInput {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* bottoni sopra la mappa della scheda (sposta / salva punto) */
+.mapActions {
+  position: absolute;
+  z-index: 500;
+  left: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(12, 36, 26, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.mapActions > span {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .footer {
   display: flex;
   flex-wrap: wrap;

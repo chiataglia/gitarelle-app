@@ -6,12 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TrekGpxRepository extends JpaRepository<TrekGpx, Long> {
 
-    // solo gli id, senza caricare i blob dei file
-    @Query("select g.trekId from TrekGpx g")
-    List<Long> findAllTrekIds();
+    // distanza e dislivello del gpx di un trek, senza caricare il file
+    @Query("select new com.escursioni.gitarelle.repositories.TrekGpxMetricsRow(g.trekId, g.distanceMeters, g.elevationGainMeters) "
+            + "from TrekGpx g where g.trekId = :trekId")
+    Optional<TrekGpxMetricsRow> findMetricsByTrekId(@Param("trekId") Long trekId);
 
     // distanza e dislivello dei gpx di un utente, senza caricare i file
     @Query("select new com.escursioni.gitarelle.repositories.TrekGpxMetricsRow(g.trekId, g.distanceMeters, g.elevationGainMeters) "

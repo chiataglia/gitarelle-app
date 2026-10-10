@@ -1,5 +1,5 @@
 // MapPicker.tsx
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import type { LatLngLiteral } from "leaflet";
 import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIcon, pinIconFor } from "./map";
@@ -9,6 +9,7 @@ type Props = {
   onChange: (pos: LatLngLiteral) => void; //funz che parte al click -- LatLngLiteral (lat: number; lng: number)
   flyTo?: LatLngLiteral | null; // se cambia (nuovo oggetto), la mappa ci vola sopra (es. luogo cercato)
   color?: string; // colore del pin (default: accento)
+  children?: ReactNode; // livelli in più dentro la mappa (es. la traccia gpx)
 };
 
 function ClickHandler({ onChange }: { onChange: Props["onChange"] }) {
@@ -40,7 +41,7 @@ function FlyTo({ target }: { target: LatLngLiteral }) {
   return null;
 }
 
-export default function MapPicker({ value, onChange, flyTo, color }: Props) {
+export default function MapPicker({ value, onChange, flyTo, color, children }: Props) {
   const center: LatLngLiteral = { lat: 42.5, lng: 12.5 }; // Italia circa
 
   return (
@@ -51,6 +52,7 @@ export default function MapPicker({ value, onChange, flyTo, color }: Props) {
         <ClickHandler onChange={onChange} />
         <KeepSize />
         {flyTo && <FlyTo target={flyTo} />}
+        {children}
         {value && <Marker position={value} icon={color ? pinIconFor(color) : pinIcon} />}
       </MapContainer>
     </div>

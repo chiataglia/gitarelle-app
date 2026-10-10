@@ -21,9 +21,14 @@ export type ClusterItem = {
 export type MapView = { zoom: number; bounds: L.LatLngBounds };
 
 // Pin di tutti i trek, raggruppati in un cerchio col numero quando sono vicini sullo schermo
-function ClusterLayer({ items }: { items: ClusterItem[] }) {
+function ClusterLayer({ items, onSelect }: { items: ClusterItem[]; onSelect: (key: string) => void }) {
   const map = useMap();
   const group = useRef<L.MarkerClusterGroup | null>(null);
+  // i marker non si ricreano a ogni render: leggono sempre l'ultima onSelect da qui
+  const select = useRef(onSelect);
+  useEffect(() => {
+    select.current = onSelect;
+  });
 
   useEffect(() => {
     const g = L.markerClusterGroup({
@@ -56,7 +61,8 @@ function ClusterLayer({ items }: { items: ClusterItem[] }) {
     if (!g) return;
     g.clearLayers();
     g.addLayers(pins.map((i) => L.marker(i.point!, { icon: pinIconFor(i.color) })
-      .bindTooltip(i.label, { direction: "top", offset: [0, -30] })));
+      .bindTooltip(i.label, { direction: "top", offset: [0, -30] })
+      .on("click", () => select.current(i.key))));
   }, [pinsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return null;
@@ -77,6 +83,22 @@ function FitAll({ items, fitKey }: { items: ClusterItem[]; fitKey: string }) {
   return null;
 }
 
+// Richiesta di inquadrare un trek (es. click sul nome in legenda); seq cambia a ogni click,
+// così si può reinquadrare lo stesso trek dopo aver spostato la mappa
+export type FocusRequest = { key: string; seq: number };
+
+// zoom sulla traccia del trek richiesto (o sul suo punto, se la traccia non c'è)
+function FocusOn({ items, focus }: { items: ClusterItem[]; focus: FocusRequest | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!focus) return;
+    const item = items.find((i) => i.key === focus.key);
+    if (item?.gpx?.bounds) map.flyToBounds(item.gpx.bounds, { padding: [40, 40], duration: 0.8 });
+    else if (item?.point) map.flyTo(item.point, 14, { duration: 0.8 });
+  }, [map, focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+}
+
 // comunica al genitore zoom e area visibile, per scaricare solo le tracce che servono
 function ViewWatcher({ onChange }: { onChange: (view: MapView) => void }) {
   const map = useMapEvents({
@@ -93,18 +115,21 @@ type Props = {
   tracks: ClusterItem[]; // sottoinsieme di items di cui disegnare la traccia
   fitKey: string;
   onViewChange: (view: MapView) => void;
+  onSelect: (key: string) => void; // click su un pin o su una traccia
+  focus: FocusRequest | null;      // trek da inquadrare
 };
 
 // Mappa dello storico: numeri per zona da lontano, tracce da vicino
-export default function TrekClusterMap({ items, tracks, fitKey, onViewChange }: Props) {
+export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, focus }: Props) {
   return (
     <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
       <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
-      <ClusterLayer items={items} />
+      <ClusterLayer items={items} onSelect={onSelect} />
       {tracks.map((i) => i.gpx && (
-        <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} pin={false} />
+        <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} pin={false} onClick={() => onSelect(i.key)} />
       ))}
       <FitAll items={items} fitKey={fitKey} />
+      <FocusOn items={items} focus={focus} />
       <ViewWatcher onChange={onViewChange} />
     </MapContainer>
   );

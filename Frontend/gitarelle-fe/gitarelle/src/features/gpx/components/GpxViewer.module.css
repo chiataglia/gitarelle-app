@@ -1,12 +1,18 @@
+/* pannello di caricamento stretto a sinistra, mappa a destra (su tablet verticale e telefono uno sotto l'altro) */
 .wrapper {
   display: grid;
-  gap: 16px;
+  grid-template-columns: clamp(320px, 30vw, 460px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
 }
 
+/* alta quanto la mappa accanto, contenuto al centro */
 .dropzone {
   position: relative;
   display: grid;
+  place-content: center;
   justify-items: center;
+  min-height: 220px;
   gap: 4px;
   padding: 36px 20px;
   text-align: center;
@@ -53,9 +59,13 @@
   background: var(--accent);
 }
 
+/* pannello con il modulo: alto al massimo come la mappa, se serve scorre dentro */
 .toolbar {
   display: grid;
+  align-content: start;
   gap: 14px;
+  max-height: var(--map-h);
+  overflow-y: auto;
 }
 
 .toolbarTop {
@@ -67,7 +77,8 @@
 }
 
 .segmented {
-  display: inline-flex;
+  display: flex;
+  width: 100%;
   padding: 4px;
   gap: 4px;
   border-radius: 999px;
@@ -76,6 +87,7 @@
 }
 
 .segmented button {
+  flex: 1;
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -159,7 +171,7 @@
 
 .saveRow {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 1fr;
   gap: 12px;
   align-items: end;
 }
@@ -186,10 +198,13 @@
 }
 
 @media (max-width: 768px) {
-  .newGrid {
+  .wrapper {
     grid-template-columns: 1fr;
   }
-  .saveRow {
+  .toolbar {
+    max-height: none;
+  }
+  .newGrid {
     grid-template-columns: 1fr;
   }
   .mapHint {
@@ -200,15 +215,8 @@
   }
 }
 
-@media (max-width: 480px) {
-  .segmented {
-    display: flex;
-    width: 100%;
-  }
-  .segmented button {
-    flex: 1;
-    padding: 8px 10px;
-  }
+.segmented button {
+  padding: 8px 10px;
 }
 
 /* ---------- caricamento multiplo ---------- */
@@ -225,9 +233,10 @@
   border-radius: var(--radius-sm);
 }
 
+/* nel pannello stretto: titolo su una riga, data e stato sotto */
 .bulkRow {
   display: grid;
-  grid-template-columns: 20px 12px minmax(0, 1fr) 150px minmax(0, 170px);
+  grid-template-columns: 20px 12px minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   padding: 8px 12px;
@@ -289,19 +298,15 @@
 .ko { color: var(--danger); }
 .warn { color: var(--accent); }
 
-@media (max-width: 768px) {
-  /* titolo su una riga, data e stato sotto */
-  .bulkRow {
-    grid-template-columns: 20px 12px minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .bulkRow > :nth-child(3) {
-    grid-column: 3 / -1;
-  }
-  .bulkRow > :nth-child(4) {
-    grid-column: 3;
-  }
-  .bulkHead > :nth-child(4),
-  .bulkHead > :nth-child(5) {
-    display: none;
-  }
+.bulkRow > :nth-child(3) {
+  grid-column: 3 / -1;
+}
+
+.bulkRow > :nth-child(4) {
+  grid-column: 3;
+}
+
+.bulkHead > :nth-child(4),
+.bulkHead > :nth-child(5) {
+  display: none;
 }

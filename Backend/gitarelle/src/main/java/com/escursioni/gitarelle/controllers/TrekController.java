@@ -32,7 +32,7 @@ public class TrekController {
 
     @PostMapping
     public TrekResponseDto create(@Valid @RequestBody CreateTrekRequestDto requestDto) {
-        return TrekResponseDto.from(this.trekService.createTrek(requestDto), false);
+        return TrekResponseDto.from(this.trekService.createTrek(requestDto), null);
     }
 
     // Modifica i dati del trek (titolo, data, amichetti, note, punto)

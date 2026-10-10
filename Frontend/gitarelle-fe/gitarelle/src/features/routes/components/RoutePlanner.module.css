@@ -1,0 +1,171 @@
+/* mappa grande a sinistra, pannello a destra, profilo e bottoni sotto */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 16px;
+}
+
+.map {
+  height: clamp(320px, 58vh, 620px);
+}
+
+.mapHint {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(12, 36, 26, 0.88);
+  border: 1px solid var(--accent);
+  pointer-events: none;
+}
+
+.side {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.help {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.help b {
+  color: var(--text);
+}
+
+/* dove aggiungere le nuove tappe: all'inizio o in fondo al tracciato */
+.addAt {
+  display: grid;
+  gap: 6px;
+}
+
+.addAt > span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.segmented {
+  display: flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.segmented button {
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmented button:hover {
+  color: var(--text);
+}
+
+.segmented .segActive,
+.segmented .segActive:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+}
+
+.stats span {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.stats b {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.status {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.credit {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.profile,
+.footer {
+  grid-column: 1 / -1;
+}
+
+.profile {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .mapHint {
+    white-space: normal;
+    width: max-content;
+    max-width: 85%;
+    text-align: center;
+  }
+}

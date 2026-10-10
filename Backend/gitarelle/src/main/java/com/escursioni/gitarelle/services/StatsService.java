@@ -7,7 +7,6 @@ import com.escursioni.gitarelle.dto.StatsDto.TrekRecord;
 import com.escursioni.gitarelle.dto.StatsDto.YearStat;
 import com.escursioni.gitarelle.entities.Folder;
 import com.escursioni.gitarelle.entities.Trek;
-import com.escursioni.gitarelle.entities.TrekGpx;
 import com.escursioni.gitarelle.repositories.*;
 import com.escursioni.gitarelle.security.CurrentUser;
 import org.springframework.stereotype.Service;
@@ -32,21 +31,23 @@ public class StatsService {
     private final TrekGpxRepository trekGpxRepository;
     private final FolderRepository folderRepository;
     private final WishRepository wishRepository;
+    private final TrekService trekService;
     private final CurrentUser currentUser;
 
     public StatsService(TrekRepository trekRepository, TrekGpxRepository trekGpxRepository, FolderRepository folderRepository,
-                        WishRepository wishRepository, CurrentUser currentUser) {
+                        WishRepository wishRepository, TrekService trekService, CurrentUser currentUser) {
         this.trekRepository = trekRepository;
         this.trekGpxRepository = trekGpxRepository;
         this.folderRepository = folderRepository;
         this.wishRepository = wishRepository;
+        this.trekService = trekService;
         this.currentUser = currentUser;
     }
 
     @Transactional
     public StatsDto getStats() {
         Long userId = this.currentUser.id();
-        backfillGpxMetrics(userId);
+        this.trekService.backfillGpxMetrics(userId);
 
         List<Trek> treks = this.trekRepository.findAllByOwnerId(userId);
         Map<Long, TrekGpxMetricsRow> metrics = this.trekGpxRepository.findMetricsByOwnerId(userId).stream()
@@ -132,15 +133,6 @@ public class StatsService {
                 folders.size(),
                 (int) this.wishRepository.countByOwnerId(userId)
         );
-    }
-
-    // gpx caricati prima che distanza e dislivello venissero calcolati all'upload: si calcolano una volta qui
-    private void backfillGpxMetrics(Long userId) {
-        for (TrekGpx gpx : this.trekGpxRepository.findWithoutMetricsByOwnerId(userId)) {
-            GpxMetrics m = GpxMetrics.computeOrZero(gpx.getData());
-            gpx.setDistanceMeters(m.distanceMeters());
-            gpx.setElevationGainMeters(m.elevationGainMeters());
-        }
     }
 
     // compagni di escursione dal campo libero "amichetti"; si conta una volta per trek, senza badare alle maiuscole

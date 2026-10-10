@@ -4,6 +4,8 @@ import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.dto.UpdateTrekLocationRequestDto;
 import com.escursioni.gitarelle.entities.Trek;
+import com.escursioni.gitarelle.entities.TrekGpx;
+import com.escursioni.gitarelle.repositories.TrekGpxMetricsRow;
 import com.escursioni.gitarelle.exceptions.TrekNotFoundException;
 import com.escursioni.gitarelle.repositories.TrekGpxRepository;
 import com.escursioni.gitarelle.repositories.TrekRepository;
@@ -12,9 +14,10 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -32,11 +35,25 @@ public class TrekService {
         this.currentUser = currentUser;
     }
 
+    @Transactional
     public List<TrekResponseDto> findAllTreks(){
-        Set<Long> treksWithGpx = new HashSet<>(this.trekGpxRepository.findAllTrekIds());
-        return this.trekRepository.findAllByOwnerId(this.currentUser.id()).stream()
-                .map(trek -> TrekResponseDto.from(trek, treksWithGpx.contains(trek.getId())))
+        Long userId = this.currentUser.id();
+        backfillGpxMetrics(userId);
+        Map<Long, TrekGpxMetricsRow> metrics = this.trekGpxRepository.findMetricsByOwnerId(userId).stream()
+                .collect(Collectors.toMap(TrekGpxMetricsRow::trekId, Function.identity()));
+        return this.trekRepository.findAllByOwnerId(userId).stream()
+                .map(trek -> TrekResponseDto.from(trek, metrics.get(trek.getId())))
                 .toList();
+    }
+
+    // gpx caricati prima che distanza e dislivello venissero calcolati all'upload: si calcolano una volta qui
+    // (va chiamato dentro una transazione: le modifiche si salvano alla fine)
+    public void backfillGpxMetrics(Long userId) {
+        for (TrekGpx gpx : this.trekGpxRepository.findWithoutMetricsByOwnerId(userId)) {
+            GpxMetrics m = GpxMetrics.computeOrZero(gpx.getData());
+            gpx.setDistanceMeters(m.distanceMeters());
+            gpx.setElevationGainMeters(m.elevationGainMeters());
+        }
     }
 
     public TrekResponseDto getTrek(Long id) {
@@ -93,7 +110,7 @@ public class TrekService {
     }
 
     private TrekResponseDto toResponse(Trek trek) {
-        return TrekResponseDto.from(trek, this.trekGpxRepository.existsById(trek.getId()));
+        return TrekResponseDto.from(trek, this.trekGpxRepository.findMetricsByTrekId(trek.getId()).orElse(null));
     }
 
 }

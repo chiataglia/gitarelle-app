@@ -24,11 +24,14 @@
   /* layout comune: tutte le sezioni hanno la stessa larghezza e le mappe principali la stessa altezza.
      Breakpoint usati ovunque: 1024px (tablet orizzontale / portatile piccolo),
      768px (tablet verticale), 480px (telefono) */
-  --content-max: 1280px;
-  --gutter: 24px;
-  --map-h: clamp(380px, 64vh, 600px);    /* mappe delle sezioni */
+  --content-max: 1680px;                  /* sugli schermi grandi si usa quasi tutta la larghezza */
+  --gutter: clamp(24px, 3vw, 48px);
+  --header-h: 64px;                       /* aggiornata da App con l'altezza vera dell'header */
+  --screen-h: calc(100svh - var(--header-h)); /* schermo visibile sotto l'header */
+  /* mappe delle sezioni: riempiono lo schermo lasciando posto a titolo e barre sopra */
+  --map-h: clamp(380px, calc(var(--screen-h) - 300px), 900px);
   --map-h-dialog: clamp(260px, 42vh, 380px); /* mappe dentro i dialog */
-  --list-col: 340px;                      /* colonna lista accanto a una mappa */
+  --list-col: clamp(360px, 26vw, 460px);  /* colonna lista accanto a una mappa */
 
   font-family: var(--font-body);
   line-height: 1.5;
@@ -45,7 +48,7 @@
 html {
   overflow-x: clip;
   scroll-behavior: smooth;
-  scroll-padding-top: 80px;
+  scroll-padding-top: var(--header-h);
 }
 
 body {
@@ -80,6 +83,14 @@ a {
 /* ---------- sezioni ---------- */
 .section {
   margin-top: 72px;
+}
+
+/* sezioni della home: ognuna alta almeno uno schermo, così andando a una sezione
+   dal menu si vede solo quella (e non l'inizio della successiva) */
+.section-screen {
+  margin-top: 0;
+  min-height: var(--screen-h);
+  padding: 32px 0;
 }
 
 .section-head {
@@ -300,6 +311,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* Punti di passaggio di un percorso disegnato: partenza verde, arrivo ambra, intermedi chiari */
+.gt-wp span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--bg);
+  background: var(--text);
+  border: 3px solid #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  cursor: grab;
+}
+
+.gt-wp-start span {
+  background: var(--fresh);
+}
+
+.gt-wp-end span {
+  background: var(--accent);
+}
+
 @keyframes drop {
   from {
     transform: translateY(-14px) rotate(-45deg);
@@ -321,14 +357,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 @media (max-width: 1024px) {
   :root {
-    --list-col: 300px;
+    --list-col: 320px;
   }
 }
 
 @media (max-width: 768px) {
-  html {
-    scroll-padding-top: 112px; /* l'header qui è su due righe */
-  }
   :root {
     --gutter: 16px;
     --map-h: clamp(320px, 55vh, 460px);
@@ -338,6 +371,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   .section {
     margin-top: 56px;
+  }
+  .section-screen {
+    margin-top: 0;
+    padding: 24px 0;
   }
 }
 

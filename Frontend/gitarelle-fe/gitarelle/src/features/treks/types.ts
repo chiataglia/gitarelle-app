@@ -8,6 +8,8 @@ export type Trek = {
   lon: number | null;
   folderId: Folder["id"] | null; // un trek può non stare in nessuna cartella
   hasGpx: boolean;
+  distanceMeters: number | null;      // dal gpx (null se non c'è)
+  elevationGainMeters: number | null; // dislivello positivo, dal gpx
 };
 
 // Corpo per creare/modificare un trek (lat/lon facoltativi, ma entrambi o nessuno)

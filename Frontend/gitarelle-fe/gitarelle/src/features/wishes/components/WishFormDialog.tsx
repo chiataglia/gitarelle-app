@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { LatLngLiteral } from "leaflet";
 import type { Wish } from "../types";
-import { createWish, deleteWishGpx, saveWishGpx, updateWish } from "../api";
+import { createWish, deleteWishGpx, fetchWishGpxText, saveWishGpx, updateWish } from "../api";
 import { errorMessage } from "../../../shared/api";
-import { parseGpx } from "../../../shared/gpx";
+import { parseGpx, type ParsedGpx } from "../../../shared/gpx";
 import Modal from "../../../shared/Modal";
 import MapPicker from "../../../shared/MapPicker";
+import TrackLayer from "../../../shared/TrackLayer";
 import PlaceSearch from "./PlaceSearch";
+import RoutePlannerDialog, { type PlannedRoute } from "../../routes/components/RoutePlannerDialog";
 import { WISH_COLOR } from "../theme";
 import styles from "./Wishes.module.css";
 
@@ -31,6 +33,35 @@ export default function WishFormDialog({ wish, onClose, onSaved }: Props) {
   const [gpxFile, setGpxFile] = useState<File | null>(null);
   const [removeGpx, setRemoveGpx] = useState(false);
   const hasGpx = gpxFile != null || (wish?.hasGpx === true && !removeGpx);
+  const [planning, setPlanning] = useState(false); // finestra "Disegna un percorso" aperta
+
+  // traccia da mostrare sulla mappa del form: quella già salvata, oppure il nuovo file / percorso disegnato
+  const [track, setTrack] = useState<ParsedGpx | null>(null);
+  const [trackKey, setTrackKey] = useState(0); // cambia a ogni nuova traccia: la mappa la reinquadra
+  const shownTrack = hasGpx ? track : null;
+
+  function showTrack(parsed: ParsedGpx) {
+    setTrack(parsed);
+    setTrackKey((k) => k + 1);
+  }
+
+  useEffect(() => {
+    if (!wish?.hasGpx) return;
+    const ctrl = new AbortController();
+    fetchWishGpxText(wish.id, ctrl.signal)
+      .then((text) => showTrack(parseGpx(text)))
+      .catch(() => { /* senza anteprima il form funziona lo stesso */ });
+    return () => ctrl.abort();
+  }, [wish?.id, wish?.hasGpx]);
+
+  // il percorso disegnato diventa la traccia gpx dell'idea, come un file caricato
+  async function onPlanned(route: PlannedRoute) {
+    setPlanning(false);
+    setGpxFile(route.file);
+    setRemoveGpx(false);
+    if (!pos) setPos(route.start);
+    showTrack(parseGpx(await route.file.text()));
+  }
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +79,9 @@ export default function WishFormDialog({ wish, onClose, onSaved }: Props) {
     // precompila nome e punto con i dati della traccia, se mancano
     const parsed = parseGpx(await file.text());
     if (!name.trim()) setName(parsed.info.name ?? file.name.replace(/\.gpx$/i, ""));
-    if (!pos && parsed.info.start) {
-      setPos(parsed.info.start);
-      setFlyTo(parsed.info.start);
-    }
+    if (!pos && parsed.info.start) setPos(parsed.info.start);
+    if (parsed.bounds) showTrack(parsed); // la mappa inquadra la traccia intera
+    else if (parsed.info.start) setFlyTo(parsed.info.start);
   }
 
   async function onSubmit(e: React.SyntheticEvent) {
@@ -131,6 +161,9 @@ export default function WishFormDialog({ wish, onClose, onSaved }: Props) {
                 + Aggiungi una traccia GPX <small>(facoltativa)</small>
               </label>
             )}
+            <button type="button" className={styles.gpxLink} onClick={() => setPlanning(true)}>
+              ✏️ {hasGpx ? "Ridisegna il percorso sulla mappa" : "oppure disegnalo sulla mappa"}
+            </button>
           </div>
         </div>
 
@@ -143,7 +176,12 @@ export default function WishFormDialog({ wish, onClose, onSaved }: Props) {
             }}
           />
           <div className={`map-frame ${styles.formMap}`}>
-            <MapPicker value={pos} onChange={setPos} flyTo={flyTo} color={WISH_COLOR} />
+            <MapPicker value={pos} onChange={setPos} flyTo={flyTo} color={WISH_COLOR}>
+              {/* traccia intera, tratteggiata come sulla mappa delle idee (il pin resta quello del punto) */}
+              {shownTrack && (
+                <TrackLayer gpx={shownTrack} trackKey={`form-${trackKey}`} color={WISH_COLOR} dashed pin={false} />
+              )}
+            </MapPicker>
             <div className={`${styles.coords} ${pos ? styles.coordsSet : ""}`}>
               {pos ? (
                 <>
@@ -166,6 +204,11 @@ export default function WishFormDialog({ wish, onClose, onSaved }: Props) {
           </button>
         </div>
       </form>
+
+      {/* fuori dal form: i suoi bottoni e la ricerca luoghi non devono inviarlo */}
+      {planning && (
+        <RoutePlannerDialog name={name} center={pos} onDone={onPlanned} onClose={() => setPlanning(false)} />
+      )}
     </Modal>
   );
 }
