@@ -1,27 +1,28 @@
+/* lo spazio attorno lo decide chi la usa (nello storico sta nella riga dei comandi) */
 .bar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  min-width: 0;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   max-width: 240px;
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
-  padding: 7px 8px 7px 14px;
+  padding: 4px 6px 4px 12px;
   border-radius: 999px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -69,7 +70,7 @@
 }
 
 .chipAdd {
-  padding-right: 14px;
+  padding-right: 12px;
   border-style: dashed;
   background: transparent;
 }
@@ -87,8 +88,8 @@
 }
 
 .toolBtn {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-content: center;
   border-radius: 10px;

@@ -26,6 +26,20 @@ export const TRACK_PALETTE = [
   "#1d3557", // blu notte
 ];
 
+// colore fisso per elemento (dall'id): togliendone o aggiungendone uno gli altri non cambiano colore
+export function colorForId(id: string | number) {
+  let h = 0;
+  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return TRACK_PALETTE[h % TRACK_PALETTE.length];
+}
+
+// Stesso colore più scuro (es. contorno delle tracce): amount 0..1 verso il nero
+export function darken(hex: string, amount = 0.35) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (shift: number) => Math.round(((n >> shift) & 0xff) * (1 - amount));
+  return `#${((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, "0")}`;
+}
+
 // Pin a goccia di un colore qualsiasi (un'icona per colore, riusata)
 const coloredPins = new Map<string, L.DivIcon>();
 export function pinIconFor(color: string) {

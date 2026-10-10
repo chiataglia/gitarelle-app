@@ -6,6 +6,8 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIconFor } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
 import TrackLayer from "../../../shared/TrackLayer";
+import InvalidateOnResize from "../../../shared/InvalidateOnResize";
+import ItalyView from "../../../shared/ItalyView";
 
 // da questo zoom in su i gruppi si sciolgono e compaiono le tracce dei trek inquadrati
 export const TRACK_ZOOM = 10;
@@ -122,8 +124,9 @@ type Props = {
 // Mappa dello storico: numeri per zona da lontano, tracce da vicino
 export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, focus }: Props) {
   return (
-    <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
+    <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} maxBoundsViscosity={1}style={{ height: "100%", width: "100%" }}>
       <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+      <ItalyView />
       <ClusterLayer items={items} onSelect={onSelect} />
       {tracks.map((i) => i.gpx && (
         <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} pin={false} onClick={() => onSelect(i.key)} />
@@ -131,6 +134,7 @@ export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, on
       <FitAll items={items} fitKey={fitKey} />
       <FocusOn items={items} focus={focus} />
       <ViewWatcher onChange={onViewChange} />
+      <InvalidateOnResize />
     </MapContainer>
   );
 }

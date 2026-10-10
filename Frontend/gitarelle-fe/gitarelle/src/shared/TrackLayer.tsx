@@ -2,7 +2,12 @@ import { useEffect } from "react";
 import { GeoJSON, Marker, Tooltip, useMap } from "react-leaflet";
 import type L from "leaflet";
 import type { ParsedGpx } from "./gpx";
-import { TRACK_COLOR, pinIcon, pinIconFor } from "./map";
+import { TRACK_COLOR, darken, pinIcon, pinIconFor } from "./map";
+
+const isLine = (feature?: GeoJSON.Feature) => {
+  const t = feature?.geometry?.type;
+  return t === "LineString" || t === "MultiLineString";
+};
 
 // ricentra solo quando cambia la traccia (non ad ogni render)
 function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
@@ -31,14 +36,21 @@ export default function TrackLayer({ gpx, trackKey, color, label, fit = true, da
   const eventHandlers = onClick ? { click: onClick } : undefined;
   return (
     <>
+      {/* contorno sottile più scuro sotto la linea: la stacca dalle tile; non cliccabile */}
+      <GeoJSON
+        key={`${trackKey}-${stroke}-outline`}
+        data={gpx.geojson}
+        interactive={false}
+        filter={(feature) => isLine(feature)}
+        style={{ color: darken(stroke, 0.5), weight: 6.5, opacity: 1, lineCap: "round", lineJoin: "round", dashArray }}
+      />
       <GeoJSON
         key={`${trackKey}-${stroke}`} // GeoJSON di react-leaflet non si aggiorna se cambia solo "data" o lo stile
         data={gpx.geojson}
         eventHandlers={eventHandlers}
         style={(feature) => {
-          const t = feature?.geometry?.type;
-          if (t === "LineString" || t === "MultiLineString") {
-            return { color: stroke, weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round", dashArray };
+          if (isLine(feature)) {
+            return { color: stroke, weight: 3.5, opacity: 0.95, lineCap: "round", lineJoin: "round", dashArray };
           }
           return { color: stroke, weight: 2, opacity: 0.8 };
         }}

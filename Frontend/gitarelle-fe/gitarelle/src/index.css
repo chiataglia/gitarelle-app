@@ -85,12 +85,14 @@ a {
   margin-top: 72px;
 }
 
-/* sezioni della home: ognuna alta almeno uno schermo, così andando a una sezione
-   dal menu si vede solo quella (e non l'inizio della successiva) */
-.section-screen {
-  margin-top: 0;
-  min-height: var(--screen-h);
-  padding: 32px 0;
+/* prima sezione di una pagina: subito sotto l'header */
+.page {
+  margin-top: 40px;
+}
+
+/* pagine a tutta mappa (storico): meno aria in cima */
+.page-compact {
+  margin-top: 20px;
 }
 
 .section-head {
@@ -372,9 +374,8 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .section {
     margin-top: 56px;
   }
-  .section-screen {
-    margin-top: 0;
-    padding: 24px 0;
+  .page {
+    margin-top: 24px;
   }
 }
 

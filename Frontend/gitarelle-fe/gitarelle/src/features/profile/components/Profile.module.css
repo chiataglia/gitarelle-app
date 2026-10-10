@@ -489,6 +489,109 @@
   font-weight: 600;
 }
 
+/* ---------- calendario ---------- */
+.calendar {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.calHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calNav {
+  display: flex;
+  gap: 6px;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calWeekday {
+  padding-bottom: 2px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.calDay {
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+}
+
+/* giorno con almeno un trek: si riconosce anche da lontano */
+.calDayTrek {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.calDayTrek .calNum {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.calToday {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.calEmpty {
+  min-height: 86px;
+}
+
+.calNum {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* trek del giorno, nel colore della sua traccia */
+.calTrek {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 6px;
+  border: none;
+  border-left: 4px solid var(--trek-color);
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--text);
+  background: color-mix(in srgb, var(--trek-color) 28%, transparent);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.calTrek:hover,
+.calTrek:focus-visible {
+  background: color-mix(in srgb, var(--trek-color) 45%, transparent);
+}
+
+.calTrek span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @keyframes shimmer {
   to {
     background-position: -200% 0;
@@ -522,5 +625,30 @@
   }
   .tileValue {
     font-size: 24px;
+  }
+  /* su telefono i trek diventano barrette colorate senza titolo (che resta nel tooltip e nella scheda) */
+  .calendar {
+    padding: 14px 10px;
+  }
+  .calGrid {
+    gap: 3px;
+  }
+  .calDay,
+  .calEmpty {
+    min-height: 58px;
+    padding: 4px;
+  }
+  .calTrek {
+    height: 12px;
+    padding: 0;
+    border-left: none;
+    background: var(--trek-color);
+  }
+  .calTrek:hover,
+  .calTrek:focus-visible {
+    background: var(--trek-color);
+  }
+  .calTrek span {
+    display: none;
   }
 }

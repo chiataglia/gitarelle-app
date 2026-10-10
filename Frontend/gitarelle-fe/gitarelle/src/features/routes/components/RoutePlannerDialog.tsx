@@ -155,7 +155,7 @@ export default function RoutePlannerDialog({ name, center, onDone, onClose }: Pr
               const s = states[i];
               return s.status === "ok" ? (
                 <Polyline key={key} positions={s.coords.map(([lon, lat]) => [lat, lon] as [number, number])}
-                  pathOptions={{ color: TRACK_COLOR, weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" }} />
+                  pathOptions={{ color: TRACK_COLOR, weight: 3.5, opacity: 0.95, lineCap: "round", lineJoin: "round" }} />
               ) : (
                 // tratto in calcolo (tratteggiato) o senza sentiero (rosso)
                 <Polyline key={key} positions={[a, b]}

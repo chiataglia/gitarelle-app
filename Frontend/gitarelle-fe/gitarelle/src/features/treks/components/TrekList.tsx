@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import type { LatLngLiteral } from "leaflet";
 import type { FolderFilter, Trek } from "../types";
 import TrekMap from "./TrekMap";
@@ -13,20 +14,16 @@ import { fetchGpxText, updateTrekLocation, uploadGpx } from "../api";
 import styles from "./TrekList.module.css";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
 import { errorMessage } from "../../../shared/api";
-import { TRACK_PALETTE } from "../../../shared/map";
-import { DistanceIcon, ElevationIcon, EyeIcon, PencilIcon, TrashIcon } from "../../../shared/icons";
+import { colorForId } from "../../../shared/map";
+import { CollapseIcon, DistanceIcon, ElevationIcon, ExpandIcon, EyeIcon, PencilIcon, TrashIcon } from "../../../shared/icons";
+import { useFullscreen } from "../../../shared/useFullscreen";
 
 const pointOf = (t: Trek): LatLngLiteral | null =>
   t.lat != null && t.lon != null ? { lat: t.lat, lng: t.lon } : null;
 
 type Mode = "detail" | "compare";
 
-// colore fisso per trek (dall'id): togliendone o aggiungendone uno gli altri non cambiano colore
-function colorOf(id: Trek["id"]) {
-  let h = 0;
-  for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return TRACK_PALETTE[h % TRACK_PALETTE.length];
-}
+const colorOf = colorForId;
 
 export default function TrekList() {
   const { treks, folders, loading, error, upsertTrek } = useTreks();
@@ -187,24 +184,24 @@ export default function TrekList() {
   // da vicino: tracce (o stato di caricamento) dei trek inquadrati
   const trackItems = compareItems.filter((i) => i.trek.hasGpx && inView(i.point));
 
+  // mappa allargabile a schermo intero
+  const full = useFullscreen<HTMLDivElement>();
+
+  // intestazione compatta (titolo, modalità, cartelle in due righe): lo spazio va alla mappa
   return (
     <div>
-      <div className="section-head">
-        <span className="eyebrow">I nostri ricordi</span>
-        <h2>Storico trek</h2>
-        <p>
-          {treks.length === 0
-            ? "Le escursioni salvate appariranno qui."
-            : folderFilter === "all"
-              ? `${treks.length} escursioni nel diario`
-              : `${visibleTreks.length} di ${treks.length} escursioni · ${activeFolder?.name ?? "senza cartella"}`}
-        </p>
-      </div>
-
-      {!loading && !error && <FolderBar value={folderFilter} onChange={changeFolderFilter} />}
-
-      {treks.length > 0 && (
-        <div className={styles.toolbar}>
+      <div className={styles.head}>
+        <div className={styles.headTitle}>
+          <h2>Storico trek</h2>
+          <span>
+            {treks.length === 0
+              ? "Le escursioni salvate appariranno qui."
+              : folderFilter === "all"
+                ? `${treks.length} escursioni nel diario`
+                : `${visibleTreks.length} di ${treks.length} escursioni · ${activeFolder?.name ?? "senza cartella"}`}
+          </span>
+        </div>
+        {treks.length > 0 && (
           <div className={styles.segmented} role="tablist" aria-label="Modalità di visualizzazione">
             <button type="button" role="tab" aria-selected={!comparing} className={!comparing ? styles.segActive : ""} onClick={() => changeMode("detail")}>
               Dettaglio
@@ -213,7 +210,13 @@ export default function TrekList() {
               Confronta percorsi
             </button>
           </div>
-          {comparing && (
+        )}
+      </div>
+
+      {!loading && !error && (
+        <div className={styles.toolbar}>
+          <FolderBar value={folderFilter} onChange={changeFolderFilter} />
+          {comparing && treks.length > 0 && (
             <div className={styles.toolbarActions}>
               <span className={styles.counter}>{comparedTreks.length} sulla mappa</span>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => showAllVisible(true)} disabled={comparedTreks.length === showableCount}>
@@ -237,7 +240,7 @@ export default function TrekList() {
           {error && <div className="alert alert-error">{error}</div>}
           {!loading && !error && treks.length === 0 && (
             <div className={styles.empty}>
-              Ancora nessuna escursione. <a href="#nuova">Aggiungi la prima →</a>
+              Ancora nessuna escursione. <Link to="/nuova">Aggiungi la prima →</Link>
             </div>
           )}
           {!loading && !error && treks.length > 0 && visibleTreks.length === 0 && (
@@ -317,119 +320,117 @@ export default function TrekList() {
           </ul>
         </div>
 
-        <div className={`map-frame ${styles.mapCol}`}>
+        <div ref={full.ref} className={`map-frame ${styles.mapCol} ${full.fallback ? styles.mapColFull : ""}`}>
+          <button
+            type="button"
+            className={styles.fullBtn}
+            onClick={full.toggle}
+            title={full.isFullscreen ? "Esci da schermo intero (Esc)" : "Schermo intero"}
+            aria-label={full.isFullscreen ? "Esci da schermo intero" : "Mappa a schermo intero"}
+          >
+            {full.isFullscreen ? <CollapseIcon /> : <ExpandIcon />}
+          </button>
+          {/* la mappa c'è sempre, anche senza trek scelti: cambiano solo i suggerimenti sopra */}
           {comparing ? (
-            compareItems.length > 0 ? (
-              <>
-                <TrekClusterMap
-                  items={compareItems}
-                  tracks={trackItems}
-                  fitKey={String(folderFilter)}
-                  onViewChange={setView}
-                  onSelect={(key) => setViewingId(comparedTreks.find((t) => String(t.id) === key)?.id ?? null)}
-                  focus={focus}
-                />
-                {!zoomedIn && view && (
-                  <div className={styles.mapHint}>Zooma su un gruppo per vedere le tracce</div>
-                )}
-                {zoomedIn && trackItems.length > 0 && (
-                  <ul className={styles.legend} aria-label="Legenda percorsi">
-                    {trackItems.map(({ key, color, trek }) => {
-                      const status = gpxTracks.errorOf(trek.id)
-                        ? "errore GPX"
-                        : gpxTracks.isLoading(trek.id)
-                          ? "caricamento..."
-                          : null;
-                      return (
-                        <li key={key}>
-                          <span className={styles.swatch} style={{ background: color }} aria-hidden="true" />
-                          <button type="button" className={styles.legendTitle} onClick={() => focusOn(trek.id)} title="Zoom sul percorso">
-                            {trek.title}
-                          </button>
-                          {trek.trekDate && <small>{formatDate(trek.trekDate, { day: "2-digit", month: "2-digit", year: "numeric" })}</small>}
-                          {status && <small className={styles.legendStatus}>· {status}</small>}
-                          <button type="button" className={styles.legendRemove} onClick={() => toggleCompared(trek)} aria-label={`Togli ${trek.title} dal confronto`}>
-                            ✕
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </>
-            ) : (
-              <div className={styles.placeholder}>
-                <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-                  <path d="M6 48 C18 30 26 44 34 26 S52 20 58 12" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                  <path d="M6 30 C16 40 30 18 40 34 S54 44 58 40" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-                <div>Seleziona dalla lista i trek da vedere insieme sulla mappa.</div>
-              </div>
-            )
-          ) : selected ? (
+            <>
+              <TrekClusterMap
+                items={compareItems}
+                tracks={trackItems}
+                fitKey={String(folderFilter)}
+                onViewChange={setView}
+                onSelect={(key) => setViewingId(comparedTreks.find((t) => String(t.id) === key)?.id ?? null)}
+                focus={focus}
+              />
+              {compareItems.length === 0 ? (
+                <div className={styles.mapHint}>Seleziona dalla lista i trek da vedere sulla mappa</div>
+              ) : !zoomedIn && view && (
+                <div className={styles.mapHint}>Zooma su un gruppo per vedere le tracce</div>
+              )}
+              {zoomedIn && trackItems.length > 0 && (
+                <ul className={styles.legend} aria-label="Legenda percorsi">
+                  {trackItems.map(({ key, color, trek }) => {
+                    const status = gpxTracks.errorOf(trek.id)
+                      ? "errore GPX"
+                      : gpxTracks.isLoading(trek.id)
+                        ? "caricamento..."
+                        : null;
+                    return (
+                      <li key={key}>
+                        <span className={styles.swatch} style={{ background: color }} aria-hidden="true" />
+                        <button type="button" className={styles.legendTitle} onClick={() => focusOn(trek.id)} title="Zoom sul percorso">
+                          {trek.title}
+                        </button>
+                        {trek.trekDate && <small>{formatDate(trek.trekDate, { day: "2-digit", month: "2-digit", year: "numeric" })}</small>}
+                        {status && <small className={styles.legendStatus}>· {status}</small>}
+                        <button type="button" className={styles.legendRemove} onClick={() => toggleCompared(trek)} aria-label={`Togli ${trek.title} dal confronto`}>
+                          ✕
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          ) : (
             <>
               <TrekMap
                 point={picking ? draftPoint : selectedPoint}
                 gpx={selectedGpx}
-                trackKey={String(selected.id)}
+                trackKey={selected ? String(selected.id) : "none"}
                 onPick={picking ? setDraftPoint : undefined}
               />
-
-              {picking && (
-                <div className={styles.mapHint}>
-                  {draftPoint ? "Clicca di nuovo per spostare il punto" : "Clicca sulla mappa per scegliere il punto"}
-                </div>
-              )}
-              {!picking && !selectedPoint && !selected.hasGpx && (
-                <div className={styles.mapHint}>Nessun punto né traccia per questa escursione</div>
-              )}
-
-              <div className={styles.detail}>
-                <h3>{selected.title}</h3>
-                <div className={styles.detailMeta}>
-                  {selected.trekDate && <span>📅 {formatDate(selected.trekDate)}</span>}
-                  {selected.amichetti && <span>👥 {selected.amichetti}</span>}
-                  {selectedPoint && <span>📍 {selectedPoint.lat.toFixed(4)}, {selectedPoint.lng.toFixed(4)}</span>}
-                  {selected.hasGpx && <span>🥾 {gpxLoading ? "Caricamento traccia..." : "Traccia GPX"}</span>}
-                </div>
-                {selected.notes && <p>{selected.notes}</p>}
-
-                <div className={styles.actions}>
-                  {picking ? (
-                    <>
-                      <button type="button" className="btn btn-primary btn-sm" onClick={savePoint} disabled={busy || !draftPoint}>
-                        {busy ? "Salvataggio..." : "Salva punto"}
-                      </button>
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPicking(false)} disabled={busy}>
-                        Annulla
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button type="button" className="btn btn-ghost btn-sm" onClick={startPicking} disabled={busy}>
-                        📍 {selectedPoint ? "Sposta punto" : "Aggiungi punto"}
-                      </button>
-                      {!selected.hasGpx && (
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>
-                          {busy ? "Caricamento..." : "⤒ Carica GPX"}
-                        </button>
-                      )}
-                    </>
+              {!selected && <div className={styles.mapHint}>Seleziona un trek dalla lista per vederlo sulla mappa</div>}
+              {selected && (
+                <>
+                  {picking && (
+                    <div className={styles.mapHint}>
+                      {draftPoint ? "Clicca di nuovo per spostare il punto" : "Clicca sulla mappa per scegliere il punto"}
+                    </div>
                   )}
-                  <input ref={fileInput} type="file" accept=".gpx" hidden onChange={onGpxPicked} />
-                </div>
+                  {!picking && !selectedPoint && !selected.hasGpx && (
+                    <div className={styles.mapHint}>Nessun punto né traccia per questa escursione</div>
+                  )}
 
-                {(actionError || gpxError) && <div className={`alert alert-error ${styles.detailAlert}`}>{actionError ?? gpxError}</div>}
-              </div>
+                  <div className={styles.detail}>
+                    <h3>{selected.title}</h3>
+                    <div className={styles.detailMeta}>
+                      {selected.trekDate && <span>📅 {formatDate(selected.trekDate)}</span>}
+                      {selected.amichetti && <span>👥 {selected.amichetti}</span>}
+                      {selectedPoint && <span>📍 {selectedPoint.lat.toFixed(4)}, {selectedPoint.lng.toFixed(4)}</span>}
+                      {selected.hasGpx && <span>🥾 {gpxLoading ? "Caricamento traccia..." : "Traccia GPX"}</span>}
+                    </div>
+                    {selected.notes && <p>{selected.notes}</p>}
+
+                    <div className={styles.actions}>
+                      {picking ? (
+                        <>
+                          <button type="button" className="btn btn-primary btn-sm" onClick={savePoint} disabled={busy || !draftPoint}>
+                            {busy ? "Salvataggio..." : "Salva punto"}
+                          </button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPicking(false)} disabled={busy}>
+                            Annulla
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={startPicking} disabled={busy}>
+                            📍 {selectedPoint ? "Sposta punto" : "Aggiungi punto"}
+                          </button>
+                          {!selected.hasGpx && (
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>
+                              {busy ? "Caricamento..." : "⤒ Carica GPX"}
+                            </button>
+                          )}
+                        </>
+                      )}
+                      <input ref={fileInput} type="file" accept=".gpx" hidden onChange={onGpxPicked} />
+                    </div>
+
+                    {(actionError || gpxError) && <div className={`alert alert-error ${styles.detailAlert}`}>{actionError ?? gpxError}</div>}
+                  </div>
+                </>
+              )}
             </>
-          ) : (
-            <div className={styles.placeholder}>
-              <svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true">
-                <path d="M6 52 L24 22 L34 38 L40 30 L58 52 Z" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" />
-                <circle cx="46" cy="16" r="5" fill="currentColor" />
-              </svg>
-              <div>Seleziona un trek dalla lista per vederlo sulla mappa.</div>
-            </div>
           )}
         </div>
       </div>

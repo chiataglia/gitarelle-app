@@ -4,6 +4,8 @@ import type { LatLngLiteral } from "leaflet";
 import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIcon } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
 import TrackLayer from "../../../shared/TrackLayer";
+import InvalidateOnResize from "../../../shared/InvalidateOnResize";
+import ItalyView from "../../../shared/ItalyView";
 
 const ITALY: LatLngLiteral = { lat: 42.5, lng: 12.5 };
 
@@ -36,12 +38,14 @@ function ClickHandler({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
 export default function TrekMap({ point, gpx, trackKey, onPick }: Props) {
   return (
     <div style={{ height: "100%", minHeight: "var(--map-h)", width: "100%", cursor: onPick ? "crosshair" : undefined }}>
-      <MapContainer center={point ?? ITALY} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
+      <MapContainer center={point ?? ITALY} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} maxBoundsViscosity={1} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+        <ItalyView />
         {gpx && <TrackLayer gpx={gpx} trackKey={trackKey} />}
         {point && (!gpx || onPick) && <Marker position={point} icon={pinIcon} />}
         {point && !gpx && <Recenter pos={point} />}
         {onPick && <ClickHandler onPick={onPick} />}
+        <InvalidateOnResize />
       </MapContainer>
     </div>
   );

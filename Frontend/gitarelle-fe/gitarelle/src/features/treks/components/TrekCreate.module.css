@@ -64,6 +64,44 @@
   gap: 12px;
 }
 
+/* zona gpx compatta in cima al form (stile base in GpxViewer.module.css) */
+.dropzone {
+  min-height: 0;
+  grid-auto-flow: column;
+  place-content: center start;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.dropzone strong {
+  font-size: 15px;
+}
+
+.dropzone small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.dropIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 17px;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.gpxBox {
+  display: grid;
+  gap: 10px;
+}
+
 @media (max-width: 1024px) {
   .layout {
     grid-template-columns: 1.2fr 1fr;

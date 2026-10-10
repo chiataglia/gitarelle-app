@@ -1,8 +1,42 @@
+/* intestazione compatta: titolo e conteggio sulla stessa riga, modalità a destra */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+}
+
+.headTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  min-width: 0;
+}
+
+.headTitle h2 {
+  font-size: clamp(22px, 2.6vw, 28px);
+}
+
+.headTitle span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .layout {
   display: grid;
   grid-template-columns: var(--list-col) 1fr;
   gap: 20px;
   align-items: start;
+}
+
+/* da tablet orizzontale in su la mappa arriva fino in fondo allo schermo, sotto le due righe di comandi */
+@media (min-width: 769px) {
+  .layout {
+    --map-h: max(520px, calc(var(--screen-h) - 112px));
+  }
 }
 
 /* minmax(0, 1fr): senza, un titolo lungo (su una riga) allarga la colonna oltre la sua larghezza
@@ -130,6 +164,44 @@
   background: var(--bg-2);
 }
 
+/* schermo intero: nativo (:fullscreen) o, dove l'API manca, allargata alla finestra */
+.mapCol:fullscreen,
+.mapColFull {
+  height: 100%;
+  border-radius: 0;
+  border: none;
+}
+
+.mapColFull {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  height: 100dvh;
+}
+
+/* sotto i pulsanti +/- di leaflet, con lo stesso aspetto */
+.fullBtn {
+  position: absolute;
+  z-index: 1000;
+  top: 84px;
+  left: 10px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-content: center;
+  padding: 0;
+  border-radius: 4px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  background-clip: padding-box;
+  color: #333;
+  cursor: pointer;
+}
+
+.fullBtn:hover {
+  background-color: #f4f4f4;
+}
+
 .detail {
   position: absolute;
   z-index: 500;
@@ -164,25 +236,6 @@
   font-size: 14px;
   max-height: 84px;
   overflow-y: auto;
-}
-
-.placeholder {
-  height: 100%;
-  min-height: var(--map-h);
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 12px;
-  padding: 24px;
-  text-align: center;
-  color: var(--muted);
-  background:
-    radial-gradient(circle at 50% 40%, rgba(127, 216, 160, 0.08), transparent 60%);
-}
-
-.placeholder svg {
-  color: var(--fresh);
-  opacity: 0.7;
 }
 
 .empty {
@@ -330,14 +383,14 @@
   }
 }
 
-/* ---------- confronto percorsi ---------- */
+/* cartelle a sinistra, comandi del confronto a destra */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 8px 12px;
+  margin-bottom: 12px;
 }
 
 .toolbarActions {
@@ -356,8 +409,8 @@
 
 .segmented {
   display: inline-flex;
-  padding: 4px;
-  gap: 4px;
+  padding: 3px;
+  gap: 3px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--border);
@@ -365,13 +418,13 @@
 
 .segmented button {
   font: inherit;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
   background: transparent;
   border: none;
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: 6px 14px;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }

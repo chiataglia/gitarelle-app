@@ -1,6 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Link, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import HomePage from "./HomePage";
+import HistoryPage from "./features/treks/HistoryPage";
+import NewTrekPage from "./features/treks/NewTrekPage";
+import WishesPage from "./features/wishes/WishesPage";
 import ProfilePage from "./features/profile/ProfilePage";
 import Avatar from "./features/profile/components/Avatar";
 import { useAuth } from "./features/auth/AuthContext";
@@ -8,11 +11,22 @@ import { displayName } from "./features/auth/api";
 import BrandMark from "./shared/BrandMark";
 import styles from "./App.module.css";
 
+const NAV = [
+  { to: "/storico", label: "Storico" },
+  { to: "/nuova", label: "Nuova" },
+  { to: "/idee", label: "Da fare" },
+];
+
 function App() {
   const { user, logout } = useAuth();
 
-  // altezza vera dell'header (su mobile va su due righe) in --header-h: le sezioni a tutto schermo
-  // e lo scroll verso le ancore ne tengono conto
+  // cambiando pagina si riparte dall'alto
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [pathname]);
+
+  // altezza vera dell'header (su mobile va su due righe) in --header-h: l'altezza delle mappe ne tiene conto
   const headerRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const header = headerRef.current;
@@ -33,10 +47,11 @@ function App() {
             Gitarelle
           </Link>
           <nav className={styles.nav}>
-            <Link to="/#storico">Storico</Link>
-            <Link to="/#nuova">Nuova</Link>
-            <Link to="/#gpx">GPX</Link>
-            <Link to="/#idee">Da fare</Link>
+            {NAV.map(({ to, label }) => (
+              <NavLink key={to} to={to} className={({ isActive }) => (isActive ? styles.navActive : undefined)}>
+                {label}
+              </NavLink>
+            ))}
           </nav>
           {user && (
             <div className={styles.account}>
@@ -57,6 +72,9 @@ function App() {
       <div className="app-container" id="top">
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/storico" element={<HistoryPage />} />
+          <Route path="/nuova" element={<NewTrekPage />} />
+          <Route path="/idee" element={<WishesPage />} />
           <Route path="/profilo" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
