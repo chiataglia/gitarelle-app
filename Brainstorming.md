@@ -2,20 +2,22 @@
 
 
 
-* Salvare gpx nel backend, associarlo al trek specifico FATTO
-* Calcolare dal gpx durata e altitudine (realizzarne un grafico?)
-* 1. Se rimuovo lat/lon da Trek, come mostro trek sulla mappa senza caricare il GPX? TrekMap e TrekList usano lat/lon per posizionare il marker. Tre opzioni:
-
-1. Estrai e salvi un "punto rappresentativo" 
-Elimini completamente la mappa dalla lista trek??
-
-2. Atomicità: creare Trek + caricare GPX in un'unica transazione
-Oggi sono due endpoint separati. Se l'upload GPX fallisce dopo la creazione del trek, hai un trek orfano senza traccia. Valutare se fare tutto in un'unica POST multipart che accetta sia i metadati del trek che il file GPX.
-
-3. Il campo title su TrekGpx è ridondante con il title del Trek
+BUG: al primo click della cartella dei trek la traccia gpx dei singoli percorsi non viene caricata,  le volte successive invece sì 
 
 
 
+# Centrare mappa al cnetro del suo gpx, non nel punto di partenza
+
+
+# eliminare funzionalità sposta punto
+
+# vedere se si possono modificare funzionalità di leaflaet (bottoncini e altro)
+
+# mappe diverse open source? oppure di leflet altre modalità
+
+# eliminare lista di percorsi in alto a destra, stessa logica nella lista a sinistra
+
+# riorganizzazione cartelle
 
 
 

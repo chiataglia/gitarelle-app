@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { SLOPE_STOPS, slopeColor, type Profile, type ProfilePoint } from "../../../shared/elevation";
+import { slopeColor, type Profile, type ProfilePoint } from "../../../shared/elevation";
 import styles from "./ElevationProfile.module.css";
 
 const fmt = (n: number, digits = 0) => n.toLocaleString("it-IT", { maximumFractionDigits: digits });
@@ -12,6 +12,9 @@ function niceStep(span: number, count: number) {
 }
 
 const MAX_GRADIENT_STOPS = 240;
+const LINE_WIDTH = 3.5;       // spessore del bordo del profilo
+const SEPARATOR_WIDTH = 0.5;    // contorno scuro attorno al bordo, sopra e sotto (px)
+const AREA_OPACITY = 0.35;   // opacità dell'area sotto il bordo (1 = piena come il bordo, 0 = invisibile)
 
 // scala della pendenza nella legenda: da piano a 35% (oltre il colore non cambia più)
 const LEGEND_MAX = 35;
@@ -86,7 +89,9 @@ export default function ElevationProfile({ profile, onHover }: Props) {
 
   const hp = hover != null ? points[hover] : null;
   const summary = `Profilo altimetrico: ${fmt(km, 1)} km, quota da ${fmt(minEle)} a ${fmt(maxEle)} metri`;
-  const legendGradient = `linear-gradient(90deg, ${SLOPE_STOPS.map(([s, c]) => `${c} ${(s / LEGEND_MAX) * 100}%`).join(", ")})`;
+  // la legenda campiona slopeColor ogni 0,5%, così mostra gli stessi passaggi netti del grafico
+  const legendStops = Array.from({ length: LEGEND_MAX * 2 + 1 }, (_, i) => `${slopeColor(i / 2)} ${(i / 2 / LEGEND_MAX) * 100}%`);
+  const legendGradient = `linear-gradient(90deg, ${legendStops.join(", ")})`;
 
   return (
     <figure className={styles.chart}>
@@ -123,8 +128,11 @@ export default function ElevationProfile({ profile, onHover }: Props) {
               <text key={v} x={x(v * 1000)} y={H - 6} className={styles.axisLabel} textAnchor="middle">{fmt(v, 1)}{v === 0 ? "" : " km"}</text>
             ))}
 
-            <path d={area} fill={`url(#${gradientId})`} fillOpacity={0.85} />
-            <path d={line} fill="none" stroke={`url(#${gradientId})`} strokeWidth={2} strokeLinejoin="round" />
+            <path d={area} fill={`url(#${gradientId})`} fillOpacity={AREA_OPACITY} />
+            {/* contorno del bordo: linea scura più larga sotto quella colorata, sporge sopra e sotto */}
+            <path d={line} fill="none" stroke="#223a2d" strokeWidth={LINE_WIDTH + 2 * SEPARATOR_WIDTH}
+              strokeLinejoin="round" strokeLinecap="round" />
+            <path d={line} fill="none" stroke={`url(#${gradientId})`} strokeWidth={LINE_WIDTH} strokeLinejoin="round" strokeLinecap="round" />
 
             {/* mirino */}
             {hp && (

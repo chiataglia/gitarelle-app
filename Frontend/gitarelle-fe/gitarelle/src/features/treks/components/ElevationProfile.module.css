@@ -1,7 +1,12 @@
 .chart {
+  --chart-bg: #223a2d; /* verde del profilo altimetrico */
   margin: 0;
   display: grid;
   gap: 8px;
+  padding: 12px 14px;
+  background: var(--chart-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .head {
@@ -56,7 +61,7 @@
 }
 
 .dot {
-  stroke: var(--bg);
+  stroke: var(--chart-bg);
   stroke-width: 2;
 }
 
@@ -71,7 +76,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   pointer-events: none;
-  background: rgba(12, 36, 26, 0.92);
+  background: rgba(26, 44, 35, 0.94);
   border: 1px solid var(--border-strong);
   box-shadow: var(--shadow);
 }

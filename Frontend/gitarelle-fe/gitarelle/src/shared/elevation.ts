@@ -126,15 +126,17 @@ export function computeProfile(gpx: ParsedGpx): Profile | null {
 }
 
 // Colore della pendenza (in valore assoluto: salite e discese ripide sono entrambe rosse):
-// verde del tema in piano, poi rosso sempre più scuro. Sfumatura continua tra questi punti.
+// verde → giallo → arancione → bordeaux, sfumatura continua tra questi punti (oltre il 30% resta bordeaux).
 export const SLOPE_STOPS: [number, string][] = [
-  [0, "#7fd8a0"],  // piano (--fresh)
-  [3, "#7fd8a0"],
-  [8, "#ff9a8a"],  // si comincia a salire
-  [15, "#e5484d"], // ripido
-  [25, "#a3202a"], // molto ripido
-  [35, "#6e1018"], // durissimo
+  [0, "#4caf50"],  // piano
+  [10, "#fdd835"], // si comincia a salire
+  [20, "#fb8c00"], // ripido
+  [30, "#7b1626"], // molto ripido
 ];
+
+// Quanta parte di ogni intervallo tra due colori è sfumata (al centro dell'intervallo);
+// il resto è colore pieno. 1 = sfumatura continua, 0 = cambi netti a gradino.
+export const SLOPE_BLEND = 0.3;
 
 const hexToRgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
@@ -144,7 +146,10 @@ export function slopeColor(slope: number): string {
     const [s1, c1] = SLOPE_STOPS[i];
     if (s <= s1) {
       const [s0, c0] = SLOPE_STOPS[i - 1];
-      const t = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+      const lin = s1 > s0 ? (s - s0) / (s1 - s0) : 0;
+      const t = SLOPE_BLEND > 0
+        ? Math.min(Math.max((lin - 0.5) / SLOPE_BLEND + 0.5, 0), 1)
+        : lin < 0.5 ? 0 : 1;
       const a = hexToRgb(c0), b = hexToRgb(c1);
       return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * t)).join(",")})`;
     }
