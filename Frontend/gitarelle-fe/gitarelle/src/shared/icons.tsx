@@ -10,6 +10,16 @@ export function PencilIcon({ size = 16 }: IconProps) {
   );
 }
 
+// viste della mappa: fogli sovrapposti
+export function LayersIcon({ size = 16 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3 2 8l10 5 10-5Z" />
+      <path d="m2 13 10 5 10-5" />
+    </svg>
+  );
+}
+
 export function FolderIcon({ size = 16 }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -35,6 +45,16 @@ export function ElevationIcon({ size = 16 }: IconProps) {
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M2 20l7-11 4 6 3-4 6 9Z" />
       <path d="M17 7V2M14.5 4.5 17 2l2.5 2.5" />
+    </svg>
+  );
+}
+
+// dislivello negativo: montagna con freccia in giù
+export function ElevationLossIcon({ size = 16 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2 20l7-11 4 6 3-4 6 9Z" />
+      <path d="M17 2v5M14.5 4.5 17 7l2.5-2.5" />
     </svg>
   );
 }

@@ -490,10 +490,18 @@
 }
 
 /* ---------- calendario ---------- */
+/* calendario a 3/4 della pagina; la colonna a destra resta libera */
+.calendarLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
 .calendar {
   display: grid;
-  gap: 16px;
-  padding: 18px;
+  gap: 12px;
+  padding: 16px;
 }
 
 .calHead {
@@ -509,16 +517,19 @@
   gap: 6px;
 }
 
+/* sempre 6 settimane da righe di altezza fissa: il calendario non cambia altezza tra i mesi */
 .calGrid {
+  --cal-row: 84px;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 6px;
+  grid-template-rows: auto repeat(6, var(--cal-row));
+  gap: 4px;
 }
 
 .calWeekday {
   padding-bottom: 2px;
   text-align: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -526,14 +537,15 @@
 }
 
 .calDay {
-  min-height: 86px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 6px;
-  border-radius: 10px;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--bg-2);
+  overflow: hidden;
 }
 
 /* giorno con almeno un trek: si riconosce anche da lontano */
@@ -551,45 +563,91 @@
   box-shadow: inset 0 0 0 2px var(--accent);
 }
 
+/* celle prima del giorno 1 e dopo la fine del mese */
 .calEmpty {
-  min-height: 86px;
+  border-radius: 8px;
 }
 
 .calNum {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
   color: var(--muted);
 }
 
-/* trek del giorno, nel colore della sua traccia */
+/* trek del giorno, nel colore della sua traccia: titolo sopra, distanza e dislivello sotto */
 .calTrek {
-  display: block;
+  display: grid;
+  gap: 2px;
   width: 100%;
   min-width: 0;
-  padding: 3px 6px;
+  padding: 3px 5px 3px 6px;
   border: none;
-  border-left: 4px solid var(--trek-color);
-  border-radius: 6px;
+  border-left: 3px solid var(--trek-color);
+  border-radius: 5px;
   font: inherit;
-  font-size: 12px;
-  font-weight: 600;
   text-align: left;
   color: var(--text);
-  background: color-mix(in srgb, var(--trek-color) 28%, transparent);
+  background: color-mix(in srgb, var(--trek-color) 24%, transparent);
   cursor: pointer;
   transition: background 0.12s;
 }
 
 .calTrek:hover,
 .calTrek:focus-visible {
-  background: color-mix(in srgb, var(--trek-color) 45%, transparent);
+  background: color-mix(in srgb, var(--trek-color) 40%, transparent);
+  outline: none;
 }
 
-.calTrek span {
-  display: block;
+.calTrekTitle {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* sempre su una riga: se non ci sta, il dislivello si taglia invece di allungare la cella */
+.calTrekMetrics {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.calTrekMetrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.calTrekMetrics svg {
+  flex: none;
+  color: var(--trek-color);
+}
+
+.calMore {
+  padding: 0 2px;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.calMore:hover,
+.calMore:focus-visible {
+  color: var(--accent);
+  outline: none;
 }
 
 @keyframes shimmer {
@@ -604,7 +662,8 @@
   }
   .chartsGrid,
   .trendCharts,
-  .records {
+  .records,
+  .calendarLayout {
     grid-template-columns: 1fr;
   }
 }
@@ -631,15 +690,15 @@
     padding: 14px 10px;
   }
   .calGrid {
+    --cal-row: 50px;
     gap: 3px;
   }
-  .calDay,
-  .calEmpty {
-    min-height: 58px;
-    padding: 4px;
+  .calDay {
+    padding: 3px;
   }
   .calTrek {
-    height: 12px;
+    flex: none;
+    height: 10px;
     padding: 0;
     border-left: none;
     background: var(--trek-color);
@@ -648,7 +707,8 @@
   .calTrek:focus-visible {
     background: var(--trek-color);
   }
-  .calTrek span {
+  .calTrekTitle,
+  .calTrekMetrics {
     display: none;
   }
 }

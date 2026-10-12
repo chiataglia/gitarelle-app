@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
-import { MapContainer, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, useMap, useMapEvents } from "react-leaflet";
 import L, { type LatLngLiteral } from "leaflet";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
-import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIconFor } from "../../../shared/map";
+import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
 import TrackLayer from "../../../shared/TrackLayer";
 import InvalidateOnResize from "../../../shared/InvalidateOnResize";
 import ItalyView from "../../../shared/ItalyView";
+import MapLayers from "../../../shared/MapLayers";
 
 // da questo zoom in su i gruppi si sciolgono e compaiono le tracce dei trek inquadrati
 export const TRACK_ZOOM = 10;
@@ -89,15 +90,17 @@ function FitAll({ items, fitKey }: { items: ClusterItem[]; fitKey: string }) {
 // così si può reinquadrare lo stesso trek dopo aver spostato la mappa
 export type FocusRequest = { key: string; seq: number };
 
-// zoom sulla traccia del trek richiesto (o sul suo punto, se la traccia non c'è)
+// zoom sulla traccia del trek richiesto (o sul suo punto, se la traccia non c'è);
+// se la traccia arriva dopo (era ancora da scaricare) si reinquadra sulla traccia intera
 function FocusOn({ items, focus }: { items: ClusterItem[]; focus: FocusRequest | null }) {
   const map = useMap();
+  const hasTrack = focus != null && items.some((i) => i.key === focus.key && i.gpx?.bounds);
   useEffect(() => {
     if (!focus) return;
     const item = items.find((i) => i.key === focus.key);
     if (item?.gpx?.bounds) map.flyToBounds(item.gpx.bounds, { padding: [40, 40], duration: 0.8 });
     else if (item?.point) map.flyTo(item.point, 14, { duration: 0.8 });
-  }, [map, focus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map, focus, hasTrack]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -125,7 +128,7 @@ type Props = {
 export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, focus }: Props) {
   return (
     <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} maxBoundsViscosity={1}style={{ height: "100%", width: "100%" }}>
-      <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+      <MapLayers />
       <ItalyView />
       <ClusterLayer items={items} onSelect={onSelect} />
       {tracks.map((i) => i.gpx && (

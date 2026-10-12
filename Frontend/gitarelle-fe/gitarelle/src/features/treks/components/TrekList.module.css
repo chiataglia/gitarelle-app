@@ -485,106 +485,39 @@
   border-color: var(--item-color);
 }
 
-.legend {
+/* la spunta si clicca a parte: area un po' più grande del quadratino */
+.checkToggle {
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.checkToggle::before {
+  content: "";
   position: absolute;
-  z-index: 500;
-  top: 12px;
-  right: 12px;
-  /* larga quanto serve per i titoli interi, semitrasparente per lasciar intravedere la mappa */
-  width: max-content;
-  max-width: min(520px, calc(100% - 24px));
-  max-height: 50%;
-  overflow-y: auto;
-  list-style: none;
-  margin: 0;
-  padding: 8px;
-  display: grid;
-  gap: 2px;
-  border-radius: 14px;
-  background: rgba(12, 36, 26, 0.55);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow);
-  animation: pop 0.25s ease-out;
+  inset: -8px;
 }
 
-.legend li {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 5px 6px;
-  border-radius: 8px;
-  font-size: 13px;
+.checkToggle:hover {
+  border-color: var(--accent);
+  transform: scale(1.1);
 }
 
-.legend li:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.legend small {
-  flex: none;
-  color: rgba(238, 244, 239, 0.78); /* più chiaro di --muted: lo sfondo ora è trasparente */
-  font-size: 11px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-
-.swatch {
-  flex: none;
-  align-self: center;
-  width: 18px;
-  height: 5px;
-  border-radius: 999px;
-}
-
-/* nome cliccabile: zoom sulla traccia */
-.legendTitle {
-  min-width: 0;
+/* link nel testo (es. "elenco completo" quando l'area inquadrata è vuota) */
+.linkBtn {
   padding: 0;
   font: inherit;
-  font-weight: 600;
-  text-align: left;
-  color: inherit;
+  color: var(--accent);
   background: none;
   border: none;
   cursor: pointer;
-  text-decoration: underline transparent;
+  text-decoration: underline;
   text-underline-offset: 3px;
-  transition: text-decoration-color 0.15s;
-  overflow-wrap: anywhere;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); /* leggibile anche sopra la mappa */
-}
-
-.legendStatus {
-  font-style: italic;
-}
-
-.legendRemove {
-  margin-left: auto;
-  flex: none;
-  font: inherit;
-  font-size: 12px;
-  color: var(--muted);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0 2px;
-}
-
-.legendRemove:hover {
-  color: var(--text);
 }
 
 @media (max-width: 768px) {
   .layoutCompare {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 480px) {
-  .legend {
-    top: auto;
-    bottom: 12px;
-    max-height: 40%;
   }
 }
 

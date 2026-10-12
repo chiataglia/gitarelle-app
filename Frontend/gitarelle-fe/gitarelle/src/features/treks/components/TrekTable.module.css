@@ -1,0 +1,210 @@
+.wrap {
+  display: grid;
+  gap: 12px;
+}
+
+.searchRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* la tabella scorre da sola in orizzontale, mai la pagina */
+.scroller {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th,
+.table td {
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.sortBtn:hover,
+.sortBtn:focus-visible {
+  color: var(--text);
+  outline: none;
+}
+
+.sortArrow {
+  min-width: 10px;
+  font-size: 9px;
+  color: var(--accent);
+}
+
+.num {
+  text-align: right !important;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.num .sortBtn {
+  flex-direction: row-reverse;
+}
+
+.date {
+  white-space: nowrap;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.titleCell {
+  min-width: 180px;
+}
+
+.titleCell small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.titleBtn {
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  text-decoration: underline transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.titleBtn:hover,
+.titleBtn:focus-visible {
+  text-decoration-color: currentColor;
+  outline: none;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.colActions {
+  width: 1%;
+}
+
+.tools {
+  display: flex;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.toolBtn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-content: center;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.toolBtn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(242, 165, 65, 0.12);
+}
+
+.toolBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.toolDanger:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: rgba(255, 123, 114, 0.12);
+}
+
+.toolBtn:focus-visible {
+  outline: 3px solid rgba(242, 165, 65, 0.5);
+  outline-offset: 1px;
+}
+
+.empty {
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px dashed var(--border-strong);
+  color: var(--muted);
+}
+
+/* telefoni: via la cartella, la tabella resta leggibile senza scorrere troppo */
+@media (max-width: 640px) {
+  .colFolder {
+    display: none;
+  }
+  .table th,
+  .table td {
+    padding: 8px;
+  }
+  .titleCell {
+    min-width: 140px;
+  }
+}

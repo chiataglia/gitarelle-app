@@ -3,6 +3,7 @@ import { displayName } from "../auth/api";
 import ProfileCard from "./components/ProfileCard";
 import StatsPanel from "./components/StatsPanel";
 import TrekCalendar from "./components/TrekCalendar";
+import styles from "./components/Profile.module.css";
 
 // Pagina /profilo: dati personali e statistiche del diario
 export default function ProfilePage() {
@@ -36,7 +37,10 @@ export default function ProfilePage() {
           <h2>Calendario</h2>
           <p>I giorni delle tue escursioni, ciascuna nel colore della sua traccia. Clicca un trek per aprirne la scheda.</p>
         </div>
-        <TrekCalendar />
+        <div className={styles.calendarLayout}>
+          <TrekCalendar />
+          <aside aria-hidden="true" />
+        </div>
       </section>
     </>
   );

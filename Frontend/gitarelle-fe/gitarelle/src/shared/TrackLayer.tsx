@@ -55,8 +55,20 @@ export default function TrackLayer({ gpx, trackKey, color, label, fit = true, da
           return { color: stroke, weight: 2, opacity: 0.8 };
         }}
       >
-        {label && <Tooltip sticky>{label}</Tooltip>}
+        {label && !onClick && <Tooltip sticky>{label}</Tooltip>}
       </GeoJSON>
+      {/* linea larga e invisibile sopra la traccia: la rende facile da cliccare senza centrarla al pixel */}
+      {onClick && (
+        <GeoJSON
+          key={`${trackKey}-${stroke}-hit`}
+          data={gpx.geojson}
+          filter={(feature) => isLine(feature)}
+          eventHandlers={eventHandlers}
+          style={{ color: stroke, weight: 20, opacity: 0, lineCap: "round", lineJoin: "round" }}
+        >
+          {label && <Tooltip sticky>{label}</Tooltip>}
+        </GeoJSON>
+      )}
       {pin && gpx.info.start && (
         <Marker position={gpx.info.start} icon={color ? pinIconFor(color) : pinIcon} eventHandlers={eventHandlers}>
           {label && <Tooltip direction="top" offset={[0, -30]}>{label}</Tooltip>}

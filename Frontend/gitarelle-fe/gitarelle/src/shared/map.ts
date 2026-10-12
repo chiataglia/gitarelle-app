@@ -1,7 +1,6 @@
 import L from "leaflet";
 
-export const TILE_URL = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-export const TILE_ATTRIBUTION = "&copy; OpenStreetMap contributors";
+// le tile (vista standard, topografica, satellite...) sono in MapLayers
 export const TILE_MAX_ZOOM = 19;
 
 // Pin a goccia nel colore accento (stile in index.css → .gt-pin)

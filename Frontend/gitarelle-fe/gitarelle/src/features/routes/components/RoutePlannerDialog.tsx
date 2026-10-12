@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Polyline, useMap, useMapEvents } from "react-leaflet";
 import L, { type LatLngLiteral } from "leaflet";
 import Modal from "../../../shared/Modal";
-import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, TRACK_COLOR } from "../../../shared/map";
+import { TILE_MAX_ZOOM, TRACK_COLOR } from "../../../shared/map";
 import { computeProfile, slopeColor, trackStats, type ProfilePoint } from "../../../shared/elevation";
 import { formatGain, formatKm } from "../../../shared/format";
 import { errorMessage } from "../../../shared/api";
@@ -10,6 +10,7 @@ import ElevationProfile from "../../treks/components/ElevationProfile";
 import PlaceSearch from "../../wishes/components/PlaceSearch";
 import { asParsedGpx, fetchSegment, joinSegments, segmentKey, toGpxFile, type Segment } from "../route";
 import styles from "./RoutePlanner.module.css";
+import MapLayers from "../../../shared/MapLayers";
 
 type SegmentState = { status: "loading" } | { status: "ok"; coords: Segment } | { status: "error"; message: string };
 
@@ -146,7 +147,7 @@ export default function RoutePlannerDialog({ name, center, onDone, onClose }: Pr
             maxZoom={TILE_MAX_ZOOM}
             style={{ height: "100%", width: "100%", cursor: "crosshair" }}
           >
-            <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+            <MapLayers />
             <KeepSize />
             <AddOnClick onAdd={add} />
             <FlyTo target={flyTo} />

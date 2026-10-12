@@ -1,9 +1,10 @@
 import { useEffect } from "react";
-import { MapContainer, Marker, TileLayer, Tooltip, useMap } from "react-leaflet";
+import { MapContainer, Marker, Tooltip, useMap } from "react-leaflet";
 import L, { type LatLngLiteral } from "leaflet";
-import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIconFor } from "../../../shared/map";
+import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
 import TrackLayer from "../../../shared/TrackLayer";
+import MapLayers from "../../../shared/MapLayers";
 
 export type CompareItem = {
   key: string;
@@ -34,7 +35,7 @@ function FitAll({ items }: { items: CompareItem[] }) {
 export default function TrekCompareMap({ items }: { items: CompareItem[] }) {
   return (
     <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
-      <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+      <MapLayers />
       {items.map((i) =>
         i.gpx ? (
           <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} />

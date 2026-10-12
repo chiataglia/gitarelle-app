@@ -11,8 +11,11 @@ export default function FitWhenSized({ gpx, point }: { gpx: ParsedGpx | null; po
   useEffect(() => {
     const fit = () => {
       map.invalidateSize();
-      if (gpx?.bounds) map.fitBounds(gpx.bounds, { padding: [24, 24] });
-      else if (point) map.setView(point, 13);
+      const { x, y } = map.getSize();
+      if (!x || !y) return; // dialog ancora chiuso: a dimensione zero lo zoom calcolato non ha senso
+      // senza animazione: un'animazione in corso (es. verso il punto) non deve far saltare l'inquadratura
+      if (gpx?.bounds) map.fitBounds(gpx.bounds, { padding: [24, 24], animate: false });
+      else if (point) map.setView(point, 13, { animate: false });
     };
     const ro = new ResizeObserver(fit);
     ro.observe(map.getContainer());

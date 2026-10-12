@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
-import { CircleMarker, MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, useMapEvents } from "react-leaflet";
 import type { LatLngLiteral } from "leaflet";
 import type { Trek, TrekPayload } from "../types";
 import { useTreks } from "../TreksContext";
@@ -9,12 +9,13 @@ import { errorMessage } from "../../../shared/api";
 import Modal from "../../../shared/Modal";
 import TrackLayer from "../../../shared/TrackLayer";
 import FitWhenSized from "../../../shared/FitWhenSized";
-import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIconFor } from "../../../shared/map";
+import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
-import { CalendarIcon, DistanceIcon, ElevationIcon, FolderIcon, NotesIcon, PencilIcon, PeopleIcon } from "../../../shared/icons";
-import { computeProfile, slopeColor, type ProfilePoint } from "../../../shared/elevation";
+import { CalendarIcon, DistanceIcon, ElevationIcon, ElevationLossIcon, FolderIcon, NotesIcon, PencilIcon, PeopleIcon } from "../../../shared/icons";
+import { computeProfile, slopeColor, trackStats, type ProfilePoint } from "../../../shared/elevation";
 import ElevationProfile from "./ElevationProfile";
 import styles from "./TrekDialogs.module.css";
+import MapLayers from "../../../shared/MapLayers";
 
 type Props = {
   trek: Trek;
@@ -51,6 +52,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
   // profilo altimetrico dal gpx; il punto sotto il mouse nel grafico compare anche sulla mappa
   const profile = useMemo(() => (gpx ? computeProfile(gpx) : null), [gpx]);
   const [profilePoint, setProfilePoint] = useState<ProfilePoint | null>(null);
+  const elevationLoss = gpx ? trackStats(gpx).loss : null;
 
   function start(field: Field, value: string) {
     if (saving) return;
@@ -178,7 +180,9 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
       editor: <input {...editorProps} placeholder="Chi c'era?" />,
     },
     { label: "Distanza", icon: <DistanceIcon />, text: trek.distanceMeters != null ? formatKm(trek.distanceMeters) : null },
-    { label: "Dislivello", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? `+${formatGain(trek.elevationGainMeters)}` : null },
+    { label: "Dislivello positivo", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? `+${formatGain(trek.elevationGainMeters)}` : null },
+    // il negativo non è salvato nel backend: si calcola dal gpx già scaricato
+    { label: "Dislivello negativo", icon: <ElevationLossIcon />, text: elevationLoss != null ? `−${formatGain(elevationLoss)}` : null },
   ];
 
   const heading = editing === "title" ? (
@@ -227,8 +231,9 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
         <div className={`map-frame ${styles.map}`}>
           {/* l'altezza la dà il riquadro (min-height): qui la si eredita, come in MapPicker */}
           <div style={{ height: "100%", minHeight: "inherit", width: "100%", cursor: picking ? "crosshair" : undefined }}>
-            <MapContainer center={shownPoint ?? [42.5, 12.5]} zoom={shownPoint ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
-              <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+            {/* con la traccia si parte già dal suo centro (non dalla partenza); FitWhenSized poi sistema lo zoom */}
+            <MapContainer center={gpx?.bounds?.getCenter() ?? shownPoint ?? [42.5, 12.5]} zoom={gpx?.bounds || shownPoint ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
+              <MapLayers />
               {gpx && <TrackLayer gpx={gpx} trackKey={String(trek.id)} color={color} fit={false} pin={!picking} />}
               {shownPoint && (!gpx || picking) && <Marker position={shownPoint} icon={pinIconFor(color)} />}
               {picking && <PickPoint onPick={setDraftPoint} />}
@@ -242,7 +247,8 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
               <FitWhenSized gpx={gpx} point={savedPoint ?? gpx?.info.start ?? null} />
             </MapContainer>
           </div>
-          <div className={styles.mapActions}>
+          {/* con il gpx la posizione è la traccia: il punto si sceglie a mano solo per i trek senza */}
+          {!trek.hasGpx && <div className={styles.mapActions}>
             {picking ? (
               <>
                 <span>{draftPoint ? "Clicca di nuovo per spostarlo" : "Clicca sulla mappa"}</span>
@@ -254,7 +260,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
                 📍 {savedPoint ? "Sposta punto" : "Aggiungi punto"}
               </button>
             )}
-          </div>
+          </div>}
         </div>
 
         {/* profilo altimetrico a tutta larghezza sotto info e mappa */}

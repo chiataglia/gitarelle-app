@@ -41,17 +41,17 @@ function segments(gpx: ParsedGpx): Position[][] {
   return out;
 }
 
-export type TrackStats = { distance: number; gain: number | null }; // metri; gain null se mancano le quote
+export type TrackStats = { distance: number; gain: number | null; loss: number | null }; // metri; gain/loss null se mancano le quote
 
 const statsCache = new WeakMap<ParsedGpx, TrackStats>();
 
-// Distanza e dislivello positivo di una traccia, con lo stesso metodo del backend (GpxMetrics):
+// Distanza e dislivello positivo e negativo di una traccia, con lo stesso metodo del backend (GpxMetrics):
 // niente distanza tra un segmento e l'altro, variazioni di quota sotto i 3 m ignorate (rumore del gps).
 // Il risultato resta in memoria per ogni traccia: si può chiamare a ogni render.
 export function trackStats(gpx: ParsedGpx): TrackStats {
   const cached = statsCache.get(gpx);
   if (cached) return cached;
-  let distance = 0, gain = 0, hasEle = false;
+  let distance = 0, gain = 0, loss = 0, hasEle = false;
   let ref: number | null = null;
   for (const seg of segments(gpx)) {
     for (let i = 0; i < seg.length; i++) {
@@ -61,10 +61,10 @@ export function trackStats(gpx: ParsedGpx): TrackStats {
       hasEle = true;
       if (ref == null) ref = ele;
       else if (ele - ref >= 3) { gain += ele - ref; ref = ele; }
-      else if (ref - ele >= 3) ref = ele;
+      else if (ref - ele >= 3) { loss += ref - ele; ref = ele; }
     }
   }
-  const stats = { distance, gain: hasEle ? gain : null };
+  const stats = { distance, gain: hasEle ? gain : null, loss: hasEle ? loss : null };
   statsCache.set(gpx, stats);
   return stats;
 }

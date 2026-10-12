@@ -7,6 +7,7 @@ import TrekClusterMap, { TRACK_ZOOM, type ClusterItem, type FocusRequest, type M
 import TrekEditDialog from "./TrekEditDialog";
 import TrekViewDialog from "./TrekViewDialog";
 import TrekDeleteDialog from "./TrekDeleteDialog";
+import TrekTable from "./TrekTable";
 import FolderBar from "./FolderBar";
 import { useTreks } from "../TreksContext";
 import { useGpxTracks } from "../../../shared/useGpxTracks";
@@ -21,7 +22,8 @@ import { useFullscreen } from "../../../shared/useFullscreen";
 const pointOf = (t: Trek): LatLngLiteral | null =>
   t.lat != null && t.lon != null ? { lat: t.lat, lng: t.lon } : null;
 
-type Mode = "detail" | "compare";
+// compare: mappa con i trek inquadrati; detail: un trek alla volta; all: elenco completo senza mappa
+type Mode = "detail" | "compare" | "all";
 
 const colorOf = colorForId;
 
@@ -46,7 +48,7 @@ export default function TrekList() {
 
   // zoom e area inquadrata dalla mappa del confronto
   const [view, setView] = useState<MapView | null>(null);
-  // click sul nome in legenda: la mappa vola sulla traccia di quel trek
+  // zoom dalla lista o dall'elenco: la mappa vola sulla traccia di quel trek
   const [focus, setFocus] = useState<FocusRequest | null>(null);
   const focusOn = (id: Trek["id"]) => setFocus((prev) => ({ key: String(id), seq: (prev?.seq ?? 0) + 1 }));
   const zoomedIn = view != null && view.zoom >= TRACK_ZOOM;
@@ -62,12 +64,22 @@ export default function TrekList() {
   const deleting = treks.find((t) => t.id === deletingId) ?? null;
 
   // tracce gpx da scaricare: quella del trek selezionato, oppure nel confronto quelle inquadrate
-  // (più quelle dei trek senza punto, che servono per sapere dove metterli sulla mappa) e quella della scheda aperta
+  // (più quelle dei trek senza punto, anche se tolti dalla mappa: servono per sapere dove stanno
+  // e quindi se elencarli a sinistra) e quella della scheda aperta
   const gpxIds = mode === "detail"
     ? (selected?.hasGpx ? [selected.id] : [])
-    : comparedTreks.filter((t) => t.hasGpx && (!pointOf(t) || inView(pointOf(t)))).map((t) => t.id);
+    : mode === "compare"
+      ? visibleTreks.filter((t) => t.hasGpx && (!pointOf(t) || (!hidden.has(t.id) && inView(pointOf(t))))).map((t) => t.id)
+      : [];
   if (viewing?.hasGpx && !gpxIds.includes(viewing.id)) gpxIds.push(viewing.id);
+  // anche quella del trek su cui si fa zoom, così la mappa inquadra la traccia intera
+  const focused = mode === "compare" && focus ? visibleTreks.find((t) => String(t.id) === focus.key) : undefined;
+  if (focused?.hasGpx && !gpxIds.includes(focused.id)) gpxIds.push(focused.id);
   const gpxTracks = useGpxTracks(gpxIds, fetchGpxText);
+
+  // dove sta un trek sulla mappa: il suo punto o, se manca, la partenza del gpx
+  const placeOf = (t: Trek): LatLngLiteral | null =>
+    pointOf(t) ?? (t.hasGpx ? gpxTracks.trackOf(t.id)?.info.start ?? null : null);
 
   // azioni: scelta punto e caricamento gpx
   const [picking, setPicking] = useState(false);
@@ -126,6 +138,24 @@ export default function TrekList() {
     setMode(m);
     setPicking(false);
     setDraftPoint(null);
+    setFocus(null); // la mappa si ricrea: non deve rivolare sull'ultimo trek cercato
+  }
+
+  // rimette il trek sulla mappa (se era stato tolto) e lo inquadra
+  function zoomTo(t: Trek) {
+    setHidden((prev) => {
+      if (!prev.has(t.id)) return prev;
+      const next = new Set(prev);
+      next.delete(t.id);
+      return next;
+    });
+    focusOn(t.id);
+  }
+
+  // dall'elenco completo: torna alla mappa e inquadra il trek
+  function showOnMap(t: Trek) {
+    changeMode("compare");
+    zoomTo(t);
   }
 
   function startPicking() {
@@ -166,6 +196,7 @@ export default function TrekList() {
 
   const selectedPoint = selected ? pointOf(selected) : null;
   const comparing = mode === "compare";
+  const listing = mode === "all";
 
   const showableCount = visibleTreks.filter((t) => t.hasGpx || pointOf(t)).length;
 
@@ -181,8 +212,17 @@ export default function TrekList() {
       trek: t,
     };
   });
-  // da vicino: tracce (o stato di caricamento) dei trek inquadrati
+  // da vicino: tracce dei trek inquadrati
   const trackItems = compareItems.filter((i) => i.trek.hasGpx && inView(i.point));
+
+  // nel confronto la lista mostra solo i trek che cadono nell'area inquadrata (anche quelli tolti
+  // dalla mappa, per poterli rimettere); per vederli tutti c'è l'elenco
+  const listedTreks = comparing
+    ? visibleTreks.filter((t) => {
+        const p = placeOf(t);
+        return p != null && (view == null || view.bounds.contains(p));
+      })
+    : visibleTreks;
 
   // mappa allargabile a schermo intero
   const full = useFullscreen<HTMLDivElement>();
@@ -203,12 +243,11 @@ export default function TrekList() {
         </div>
         {treks.length > 0 && (
           <div className={styles.segmented} role="tablist" aria-label="Modalità di visualizzazione">
-            <button type="button" role="tab" aria-selected={!comparing} className={!comparing ? styles.segActive : ""} onClick={() => changeMode("detail")}>
-              Dettaglio
-            </button>
-            <button type="button" role="tab" aria-selected={comparing} className={comparing ? styles.segActive : ""} onClick={() => changeMode("compare")}>
-              Confronta percorsi
-            </button>
+            {([["detail", "Dettaglio"], ["compare", "Confronta percorsi"], ["all", "Elenco"]] as const).map(([m, label]) => (
+              <button key={m} type="button" role="tab" aria-selected={mode === m} className={mode === m ? styles.segActive : ""} onClick={() => changeMode(m)}>
+                {label}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -230,6 +269,17 @@ export default function TrekList() {
         </div>
       )}
 
+      {/* elenco: tabella di tutti i trek della cartella, senza mappa */}
+      {listing && !loading && !error && treks.length > 0 ? (
+        <TrekTable
+          treks={visibleTreks}
+          folders={folders}
+          onView={(t) => setViewingId(t.id)}
+          onEdit={(t) => setEditingId(t.id)}
+          onDelete={(t) => setDeletingId(t.id)}
+          onShowOnMap={showOnMap}
+        />
+      ) : (
       <div className={`${styles.layout} ${comparing ? styles.layoutCompare : ""}`}>
         <div className={styles.listCol}>
           {loading && (
@@ -248,9 +298,15 @@ export default function TrekList() {
               Nessuna escursione {activeFolder ? `in "${activeFolder.name}"` : "senza cartella"}. Spostale qui con la ✎ su ogni trek.
             </div>
           )}
+          {comparing && visibleTreks.length > 0 && listedTreks.length === 0 && (
+            <div className={styles.empty}>
+              Nessuna escursione nell'area inquadrata. Sposta la mappa o apri l'
+              <button type="button" className={styles.linkBtn} onClick={() => changeMode("all")}>elenco completo</button>.
+            </div>
+          )}
 
           <ul className={styles.list}>
-            {visibleTreks.map((t) => {
+            {listedTreks.map((t) => {
               const nothingToShow = !t.hasGpx && !pointOf(t);
               const compareColor = !hidden.has(t.id) && !nothingToShow ? colorOf(t.id) : undefined;
               const active = comparing ? compareColor != null : selectedId === t.id;
@@ -258,15 +314,20 @@ export default function TrekList() {
                 <li key={t.id} className={styles.row}>
                   <button
                     type="button"
-                    onClick={() => (comparing ? toggleCompared(t) : select(t))}
+                    onClick={() => (comparing ? zoomTo(t) : select(t))}
                     className={`${styles.item} ${active ? styles.itemActive : ""} ${comparing ? styles.itemWithEye : styles.itemWithTools}`}
-                    aria-pressed={active}
+                    aria-pressed={comparing ? undefined : active}
                     disabled={comparing && nothingToShow}
-                    title={comparing && nothingToShow ? "Nessun punto né traccia da mostrare" : undefined}
+                    title={comparing ? (nothingToShow ? "Nessun punto né traccia da mostrare" : "Zoom sul percorso") : undefined}
                     style={comparing && compareColor ? ({ "--item-color": compareColor } as React.CSSProperties) : undefined}
                   >
+                    {/* nel confronto il click sulla card fa zoom; la spunta mette o toglie il trek dalla mappa */}
                     {comparing && (
-                      <span className={`${styles.check} ${active ? styles.checkOn : ""}`} aria-hidden="true">
+                      <span
+                        className={`${styles.check} ${styles.checkToggle} ${active ? styles.checkOn : ""}`}
+                        onClick={(e) => { e.stopPropagation(); toggleCompared(t); }}
+                        title={active ? "Togli dalla mappa" : "Mostra sulla mappa"}
+                      >
                         {active && "✓"}
                       </span>
                     )}
@@ -346,35 +407,12 @@ export default function TrekList() {
               ) : !zoomedIn && view && (
                 <div className={styles.mapHint}>Zooma su un gruppo per vedere le tracce</div>
               )}
-              {zoomedIn && trackItems.length > 0 && (
-                <ul className={styles.legend} aria-label="Legenda percorsi">
-                  {trackItems.map(({ key, color, trek }) => {
-                    const status = gpxTracks.errorOf(trek.id)
-                      ? "errore GPX"
-                      : gpxTracks.isLoading(trek.id)
-                        ? "caricamento..."
-                        : null;
-                    return (
-                      <li key={key}>
-                        <span className={styles.swatch} style={{ background: color }} aria-hidden="true" />
-                        <button type="button" className={styles.legendTitle} onClick={() => focusOn(trek.id)} title="Zoom sul percorso">
-                          {trek.title}
-                        </button>
-                        {trek.trekDate && <small>{formatDate(trek.trekDate, { day: "2-digit", month: "2-digit", year: "numeric" })}</small>}
-                        {status && <small className={styles.legendStatus}>· {status}</small>}
-                        <button type="button" className={styles.legendRemove} onClick={() => toggleCompared(trek)} aria-label={`Togli ${trek.title} dal confronto`}>
-                          ✕
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
             </>
           ) : (
             <>
               <TrekMap
-                point={picking ? draftPoint : selectedPoint}
+                // con il gpx inquadra la traccia intera: niente punto, che centrerebbe sulla partenza mentre la traccia arriva
+                point={picking ? draftPoint : selected?.hasGpx ? null : selectedPoint}
                 gpx={selectedGpx}
                 trackKey={selected ? String(selected.id) : "none"}
                 onPick={picking ? setDraftPoint : undefined}
@@ -412,16 +450,17 @@ export default function TrekList() {
                           </button>
                         </>
                       ) : (
-                        <>
-                          <button type="button" className="btn btn-ghost btn-sm" onClick={startPicking} disabled={busy}>
-                            📍 {selectedPoint ? "Sposta punto" : "Aggiungi punto"}
-                          </button>
-                          {!selected.hasGpx && (
+                        // con il gpx la posizione è la traccia: punto e caricamento servono solo ai trek senza
+                        !selected.hasGpx && (
+                          <>
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={startPicking} disabled={busy}>
+                              📍 {selectedPoint ? "Sposta punto" : "Aggiungi punto"}
+                            </button>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileInput.current?.click()} disabled={busy}>
                               {busy ? "Caricamento..." : "⤒ Carica GPX"}
                             </button>
-                          )}
-                        </>
+                          </>
+                        )
                       )}
                       <input ref={fileInput} type="file" accept=".gpx" hidden onChange={onGpxPicked} />
                     </div>
@@ -434,6 +473,7 @@ export default function TrekList() {
           )}
         </div>
       </div>
+      )}
 
       {viewing && (
         <TrekViewDialog

@@ -1,11 +1,11 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { CircleMarker, MapContainer, Marker, TileLayer } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker } from "react-leaflet";
 import type { Wish } from "../types";
 import type { ParsedGpx } from "../../../shared/gpx";
 import Modal from "../../../shared/Modal";
 import TrackLayer from "../../../shared/TrackLayer";
 import FitWhenSized from "../../../shared/FitWhenSized";
-import { TILE_ATTRIBUTION, TILE_MAX_ZOOM, TILE_URL, pinIconFor } from "../../../shared/map";
+import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import { computeProfile, slopeColor, trackStats, type ProfilePoint } from "../../../shared/elevation";
 import { formatGain, formatKm } from "../../../shared/format";
 import { CalendarIcon, DistanceIcon, ElevationIcon, ExternalIcon, NotesIcon } from "../../../shared/icons";
@@ -14,6 +14,7 @@ import { WISH_COLOR } from "../theme";
 // stessa impaginazione della scheda dei trek (info a sinistra, mappa a destra, profilo sotto)
 import dialogStyles from "../../treks/components/TrekDialogs.module.css";
 import styles from "./Wishes.module.css";
+import MapLayers from "../../../shared/MapLayers";
 
 type Props = {
   wish: Wish;
@@ -65,7 +66,7 @@ export default function WishViewDialog({ wish, gpx, onEdit, onClose }: Props) {
           {/* l'altezza la dà il riquadro (min-height): qui la si eredita */}
           <div style={{ height: "100%", minHeight: "inherit", width: "100%" }}>
             <MapContainer center={point ?? [42.5, 12.5]} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
-              <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} maxZoom={TILE_MAX_ZOOM} />
+              <MapLayers />
               {gpx ? (
                 <TrackLayer gpx={gpx} trackKey={`wish-${wish.id}`} color={WISH_COLOR} dashed />
               ) : point ? (

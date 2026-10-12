@@ -3,7 +3,8 @@ import type { Trek } from "../../treks/types";
 import { useTreks } from "../../treks/TreksContext";
 import TrekQuickView from "../../treks/components/TrekQuickView";
 import { colorForId } from "../../../shared/map";
-import { formatKm } from "../../../shared/format";
+import { formatGain, formatKm } from "../../../shared/format";
+import { DistanceIcon, ElevationIcon } from "../../../shared/icons";
 import styles from "./Profile.module.css";
 
 const WEEKDAYS = ["lun", "mar", "mer", "gio", "ven", "sab", "dom"];
@@ -32,11 +33,12 @@ export default function TrekCalendar() {
     byDay.set(k, [...(byDay.get(k) ?? []), t]);
   }
 
-  // griglia da lunedì: celle vuote prima del giorno 1, poi i giorni del mese
+  // griglia da lunedì: celle vuote prima del giorno 1, poi i giorni del mese; sempre 6 settimane,
+  // così l'altezza del calendario non cambia da un mese all'altro
   const lead = (new Date(y, m, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const cells: (number | null)[] = [...Array(lead).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
-  while (cells.length % 7) cells.push(null);
+  while (cells.length < 42) cells.push(null);
 
   const monthPrefix = `${y}-${pad(m + 1)}-`;
   const monthTreks = treks.filter((t) => t.trekDate?.startsWith(monthPrefix));
@@ -76,25 +78,47 @@ export default function TrekCalendar() {
           if (day == null) return <div key={`e${i}`} className={styles.calEmpty} aria-hidden="true" />;
           const k = dayKey(y, m, day);
           const dayTreks = byDay.get(k) ?? [];
+          // la cella ha altezza fissa: un trek mostra anche i dati, più trek solo i titoli (al massimo 2,
+          // il resto finisce in "+N")
+          const single = dayTreks.length === 1;
+          const shown = dayTreks.length > 2 ? dayTreks.slice(0, 1) : dayTreks;
+          const rest = dayTreks.slice(shown.length);
           return (
             <div
               key={k}
               className={`${styles.calDay} ${dayTreks.length ? styles.calDayTrek : ""} ${k === todayKey ? styles.calToday : ""}`}
             >
               <span className={styles.calNum}>{day}</span>
-              {dayTreks.map((t) => (
+              {shown.map((t) => (
                 <button
                   key={t.id}
                   type="button"
                   className={styles.calTrek}
                   style={{ "--trek-color": colorForId(t.id) } as React.CSSProperties}
                   onClick={() => setViewingId(t.id)}
-                  title={`${t.title}${t.distanceMeters != null ? ` · ${formatKm(t.distanceMeters)}` : ""}`}
+                  title={`${t.title}${t.distanceMeters != null ? ` · ${formatKm(t.distanceMeters)}` : ""}${t.elevationGainMeters != null ? ` · ${formatGain(t.elevationGainMeters)}` : ""}`}
                   aria-label={`Apri ${t.title}`}
                 >
-                  <span>{t.title}</span>
+                  <span className={styles.calTrekTitle}>{t.title}</span>
+                  {single && t.hasGpx && t.distanceMeters != null && (
+                    <span className={styles.calTrekMetrics}>
+                      <span><DistanceIcon size={10} />{formatKm(t.distanceMeters)}</span>
+                      <span><ElevationIcon size={10} />{formatGain(t.elevationGainMeters ?? 0)}</span>
+                    </span>
+                  )}
                 </button>
               ))}
+              {rest.length > 0 && (
+                <button
+                  type="button"
+                  className={styles.calMore}
+                  onClick={() => setViewingId(rest[0].id)}
+                  title={rest.map((t) => t.title).join("\n")}
+                  aria-label={`Altre ${rest.length} escursioni: apri ${rest[0].title}`}
+                >
+                  +{rest.length} {rest.length === 1 ? "altra" : "altre"}
+                </button>
+              )}
             </div>
           );
         })}
