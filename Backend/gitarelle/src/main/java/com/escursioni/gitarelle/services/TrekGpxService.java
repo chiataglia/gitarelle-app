@@ -19,10 +19,12 @@ public class TrekGpxService {
 
     private final TrekGpxRepository trekGpxRepository;
     private final TrekService trekService;
+    private final RegionLocator regionLocator;
 
-    public TrekGpxService(TrekGpxRepository trekGpxRepository, TrekService trekService) {
+    public TrekGpxService(TrekGpxRepository trekGpxRepository, TrekService trekService, RegionLocator regionLocator) {
         this.trekGpxRepository = trekGpxRepository;
         this.trekService = trekService;
+        this.regionLocator = regionLocator;
     }
 
     public TrekGpx findGpxById(Long trekId) {
@@ -31,6 +33,8 @@ public class TrekGpxService {
                 .orElseThrow(() -> new GpxNotFoundException(trekId));
     }
 
+    // transazione: anche la regione del trek (se ricavata dal gpx) si salva insieme al file
+    @Transactional
     public TrekGpx uploadGpxForTrek(Long trekId, String title, MultipartFile file) {
         checkNotEmpty(file);
         Trek trek = trekService.findTrekById(trekId);
@@ -68,6 +72,10 @@ public class TrekGpxService {
         GpxMetrics metrics = GpxMetrics.computeOrZero(gpx.getData());
         gpx.setDistanceMeters(metrics.distanceMeters());
         gpx.setElevationGainMeters(metrics.elevationGainMeters());
+        // senza punto sulla mappa la regione è quella della partenza della traccia
+        if (trek.getLat() == null || trek.getLon() == null) {
+            trek.setRegion(this.regionLocator.regionOf(metrics.startLat(), metrics.startLon()));
+        }
         return gpx;
     }
 

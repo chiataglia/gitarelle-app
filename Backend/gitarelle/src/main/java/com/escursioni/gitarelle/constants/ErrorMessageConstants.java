@@ -37,6 +37,8 @@ public final class ErrorMessageConstants {
     public static final String FOLDER_NAME_REQUIRED = "Il nome della cartella è obbligatorio";
     public static final String FOLDER_NAME_TOO_LONG = "Il nome della cartella può avere al massimo 60 caratteri";
     public static final String FOLDER_ALREADY_EXISTS = "Esiste già una cartella chiamata \"%s\"";
+    public static final String TREK_IDS_REQUIRED = "Scegli almeno un'escursione";
+    public static final String FOLDER_TREKS_REQUIRED = "Scegli almeno un'escursione da aggiungere alla cartella";
 
     // Desideri (tour da fare)
     public static final String WISH_NOT_FOUND = "Idea di tour con id %d non trovata";

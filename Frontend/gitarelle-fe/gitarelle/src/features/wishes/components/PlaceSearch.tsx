@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { searchPlaces, type Place } from "../../../shared/geocode";
 import { errorMessage } from "../../../shared/api";
+import { SearchIcon } from "../../../shared/icons";
 import styles from "./Wishes.module.css";
 
 // Cerca un luogo per nome (OpenStreetMap) e restituisce quello scelto.
@@ -44,8 +45,15 @@ export default function PlaceSearch({ onPick }: { onPick: (place: Place) => void
           placeholder="Cerca un luogo: rifugio, cima, paese..."
           aria-label="Cerca un luogo"
         />
-        <button type="button" className={styles.placeBtn} onClick={search} disabled={searching || query.trim().length < 2}>
-          {searching ? "..." : "Cerca"}
+        <button
+          type="button"
+          className={styles.placeBtn}
+          onClick={search}
+          disabled={searching || query.trim().length < 2}
+          title="Cerca"
+          aria-label="Cerca"
+        >
+          {searching ? "…" : <SearchIcon size={17} />}
         </button>
       </div>
 

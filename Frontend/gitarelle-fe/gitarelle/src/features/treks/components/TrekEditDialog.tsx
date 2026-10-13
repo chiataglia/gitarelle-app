@@ -18,7 +18,7 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
   const [trekDate, setTrekDate] = useState(trek.trekDate ?? "");
   const [amichetti, setAmichetti] = useState(trek.amichetti ?? "");
   const [notes, setNotes] = useState(trek.notes ?? "");
-  const [folderId, setFolderId] = useState(trek.folderId);
+  const [folderIds, setFolderIds] = useState(trek.folderIds);
   const [pos, setPos] = useState<LatLngLiteral | null>(
     trek.lat != null && trek.lon != null ? { lat: trek.lat, lng: trek.lon } : null
   );
@@ -41,7 +41,7 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
         notes,
         lat: pos?.lat ?? null,
         lon: pos?.lng ?? null,
-        folderId,
+        folderIds,
       }));
       onClose();
     } catch (err) {
@@ -68,7 +68,7 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
               <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
             </label>
           </div>
-          <FolderSelect value={folderId} onChange={setFolderId} />
+          <FolderSelect value={folderIds} onChange={setFolderIds} />
           <label className="field">
             <span>Note</span>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={6} placeholder="Panorama, fatica, merenda al rifugio..." />

@@ -110,6 +110,60 @@
   border-color: var(--danger);
 }
 
+/* ---------- trascinamento dei trek sulle cartelle ---------- */
+.chipDrop {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.chipDropOver,
+.chipDropOver.chipActive {
+  color: var(--accent-ink);
+  background: var(--accent-hover);
+  border-style: solid;
+  border-color: var(--accent-hover);
+  transform: scale(1.06);
+}
+
+/* esito dell'ultimo rilascio o dell'"Aggiungi" */
+.notice {
+  align-self: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--success);
+}
+
+.noticeError {
+  color: var(--danger);
+}
+
+.addBtn {
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+/* ---------- scelta delle cartelle nei form (FolderSelect) ---------- */
+.pickChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pickChip {
+  padding-right: 12px;
+}
+
+.pickChip:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.pickEmpty {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 @media (max-width: 768px) {
   .bar {
     flex-direction: column;

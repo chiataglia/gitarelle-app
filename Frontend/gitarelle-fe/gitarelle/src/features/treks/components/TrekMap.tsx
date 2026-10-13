@@ -39,7 +39,7 @@ function ClickHandler({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
 export default function TrekMap({ point, gpx, trackKey, onPick }: Props) {
   return (
     <div style={{ height: "100%", minHeight: "var(--map-h)", width: "100%", cursor: onPick ? "crosshair" : undefined }}>
-      <MapContainer center={point ?? ITALY} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} maxBoundsViscosity={1} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
+      <MapContainer center={point ?? ITALY} zoom={point ? 12 : 6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%", cursor: "inherit" }}>
         <MapLayers />
         <ItalyView />
         {gpx && <TrackLayer gpx={gpx} trackKey={trackKey} />}

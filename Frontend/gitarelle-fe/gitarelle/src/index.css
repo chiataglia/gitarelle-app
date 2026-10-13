@@ -384,6 +384,133 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   outline: none;
 }
 
+/* ---------- controlli e testi di Leaflet con lo stile del sito (come il selettore delle viste) ---------- */
+.leaflet-container {
+  font-family: var(--font-body);
+}
+
+/* zoom + / −: un unico blocco scuro, come il pulsante delle viste */
+.leaflet-bar,
+.leaflet-touch .leaflet-bar {
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: rgba(12, 36, 26, 0.88);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* index.css si carica dopo leaflet.css (main.tsx); .leaflet-container davanti per sicurezza contro l'hover bianco di Leaflet */
+.leaflet-container .leaflet-bar a,
+.leaflet-touch .leaflet-container .leaflet-bar a,
+.leaflet-container.leaflet-touch .leaflet-bar a {
+  width: 34px;
+  height: 34px;
+  line-height: 34px;
+  font: 600 20px/34px var(--font-body);
+  color: var(--text);
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  transition: color 0.15s, box-shadow 0.15s;
+}
+
+.leaflet-container .leaflet-bar a:last-child {
+  border-bottom: none;
+}
+
+/* come il pulsante delle viste e lo schermo intero: simbolo e contorno arancioni, sfondo invariato */
+.leaflet-container .leaflet-bar a:hover,
+.leaflet-container .leaflet-bar a:focus-visible {
+  color: var(--accent);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.leaflet-container .leaflet-bar a:first-child:hover,
+.leaflet-container .leaflet-bar a:first-child:focus-visible {
+  border-radius: 7px 7px 0 0;
+}
+
+.leaflet-container .leaflet-bar a:last-child:hover,
+.leaflet-container .leaflet-bar a:last-child:focus-visible {
+  border-radius: 0 0 7px 7px;
+}
+
+.leaflet-container .leaflet-bar a.leaflet-disabled,
+.leaflet-container .leaflet-bar a.leaflet-disabled:hover {
+  color: var(--muted);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* etichetta al passaggio del mouse su tracce e pin */
+.leaflet-tooltip {
+  padding: 5px 10px;
+  font: 600 13px var(--font-body);
+  color: var(--text);
+  background: rgba(12, 36, 26, 0.92);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+}
+
+.leaflet-tooltip-top::before {
+  border-top-color: rgba(12, 36, 26, 0.92);
+}
+
+.leaflet-tooltip-bottom::before {
+  border-bottom-color: rgba(12, 36, 26, 0.92);
+}
+
+.leaflet-tooltip-left::before {
+  border-left-color: rgba(12, 36, 26, 0.92);
+}
+
+.leaflet-tooltip-right::before {
+  border-right-color: rgba(12, 36, 26, 0.92);
+}
+
+/* crediti delle mappe in basso a destra: discreti, sullo sfondo scuro */
+.leaflet-container .leaflet-control-attribution {
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  background: rgba(12, 36, 26, 0.75);
+  backdrop-filter: blur(4px);
+  border-top-left-radius: 8px;
+}
+
+.leaflet-control-attribution a {
+  color: var(--fresh);
+}
+
+/* pulsanti nostri sopra la mappa (es. schermo intero): stesso aspetto di zoom e viste */
+.gt-map-btn {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-content: center;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  background: rgba(12, 36, 26, 0.88);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.gt-map-btn:hover,
+.gt-map-btn:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .gt-pin span {
   display: block;
   width: 28px;
@@ -402,6 +529,31 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   inset: 7px;
   border-radius: 50%;
   background: var(--bg-2);
+}
+
+/* "+" accanto al pin per aggiungere il trek alla cartella (modalità "Aggiungi" dello storico) */
+.gt-pin-add {
+  position: absolute;
+  top: -12px;
+  left: 22px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font: 800 18px/1 var(--font-body);
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  animation: pop 0.25s ease-out;
+  transition: transform 0.15s, background 0.15s;
+}
+
+.gt-pin-add:hover {
+  background: var(--accent-hover);
+  transform: scale(1.15);
 }
 
 /* Gruppo di trek vicini (leaflet.markercluster): cerchio col numero */
@@ -509,4 +661,53 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* etichetta che segue il mouse trascinando i trek dello storico sulle cartelle (vedi trekDrag.ts) */
+.trek-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font: 700 13px var(--font-body);
+  color: var(--accent-ink);
+  background: var(--accent);
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+
+/* pulsanti tondi a icona nell'intestazione dei dialog (✕ e azioni come modifica/elimina): vedi Modal */
+.modal-icon-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  font: inherit;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.modal-icon-btn:hover,
+.modal-icon-btn:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.14);
+  outline: none;
+}
+
+.modal-icon-btn.is-danger:hover,
+.modal-icon-btn.is-danger:focus-visible {
+  color: var(--accent-ink);
+  background: var(--danger);
+}
+
+.modal-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }

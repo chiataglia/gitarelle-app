@@ -54,3 +54,23 @@ export function pinIconFor(color: string) {
   }
   return icon;
 }
+
+// Stesso pin con un "+" accanto (aggiunta alla cartella dalla mappa dello storico): chi gestisce il click
+// del marker riconosce il "+" dal bersaglio, con isPinAddClick
+const addPins = new Map<string, L.DivIcon>();
+export function pinAddIconFor(color: string) {
+  let icon = addPins.get(color);
+  if (!icon) {
+    icon = L.divIcon({
+      className: "gt-pin",
+      html: `<span style="background:${color}"></span><b class="gt-pin-add" title="Aggiungi alla cartella">+</b>`,
+      iconSize: [28, 28],
+      iconAnchor: [14, 34],
+    });
+    addPins.set(color, icon);
+  }
+  return icon;
+}
+
+export const isPinAddClick = (e: L.LeafletMouseEvent) =>
+  (e.originalEvent.target as HTMLElement | null)?.closest(".gt-pin-add") != null;

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Folder, FolderFilter } from "../types";
 import { useTreks } from "../TreksContext";
-import { createFolder, deleteFolder, renameFolder } from "../api";
+import { addTreksToFolder, createFolder, deleteFolder, renameFolder } from "../api";
+import { isTrekDrag, readTrekDrag } from "../trekDrag";
 import { errorMessage } from "../../../shared/api";
 import { FolderIcon, PencilIcon, TrashIcon } from "../../../shared/icons";
 import Modal from "../../../shared/Modal";
@@ -11,47 +12,103 @@ import dialogStyles from "./TrekDialogs.module.css";
 type Props = {
   value: FolderFilter;
   onChange: (f: FolderFilter) => void;
+  dragging?: boolean;       // si stanno trascinando trek dalla lista: le cartelle si evidenziano come destinazioni
+  onTreksAdded?: () => void; // dopo un rilascio andato a buon fine (la lista azzera la selezione)
+  onAdd: (folder: Folder) => void; // "+ Aggiungi": lo storico mostra i trek non ancora nella cartella, con un "+"
+  adding?: boolean;                // modalità "Aggiungi" in corso (il pulsante si nasconde)
 };
 
-// Filtro dello storico per cartella + gestione delle cartelle (crea, rinomina, elimina)
-export default function FolderBar({ value, onChange }: Props) {
-  const { treks, folders } = useTreks();
+const escursioni = (n: number) => (n === 1 ? "1 escursione" : `${n} escursioni`);
+
+// Filtro dello storico per cartella + gestione delle cartelle (crea, rinomina, elimina, aggiungi trek).
+// Le cartelle accettano i trek trascinati dalla lista
+export default function FolderBar({ value, onChange, dragging = false, onTreksAdded, onAdd, adding = false }: Props) {
+  const { treks, folders, upsertTreks } = useTreks();
   // "new" = creazione, Folder = rinomina
   const [naming, setNaming] = useState<"new" | Folder | null>(null);
   const [deleting, setDeleting] = useState<Folder | null>(null);
 
-  const countIn = (id: Folder["id"] | null) => treks.filter((t) => t.folderId === id).length;
-  const withoutFolder = countIn(null);
+  // cartella sotto il mouse durante il trascinamento, ed esito dell'ultimo rilascio
+  const [dropOver, setDropOver] = useState<Folder["id"] | null>(null);
+  const [notice, setNotice] = useState<{ text: string; error?: boolean } | null>(null);
+  useEffect(() => {
+    if (!notice) return;
+    const t = setTimeout(() => setNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [notice]);
+
+  const countIn = (id: Folder["id"]) => treks.filter((t) => t.folderIds.includes(id)).length;
+  const withoutFolder = treks.filter((t) => t.folderIds.length === 0).length;
   const active = typeof value === "number" ? folders.find((f) => f.id === value) ?? null : null;
 
-  const chip = (key: FolderFilter, label: string, count: number, icon = false) => (
-    <button
-      key={key}
-      type="button"
-      role="tab"
-      aria-selected={value === key}
-      className={`${styles.chip} ${value === key ? styles.chipActive : ""}`}
-      onClick={() => onChange(key)}
-    >
-      {icon && <FolderIcon size={14} />}
-      <span className={styles.chipLabel}>{label}</span>
-      <span className={styles.count}>{count}</span>
-    </button>
-  );
+  async function onDrop(e: React.DragEvent, folder: Folder) {
+    e.preventDefault();
+    setDropOver(null);
+    const ids = readTrekDrag(e);
+    if (!ids.length) return;
+    const fresh = ids.filter((id) => !treks.find((t) => t.id === id)?.folderIds.includes(folder.id));
+    if (!fresh.length) {
+      setNotice({ text: ids.length === 1 ? `Già in "${folder.name}"` : `Erano già tutte in "${folder.name}"` });
+      return;
+    }
+    try {
+      upsertTreks(await addTreksToFolder(folder.id, fresh));
+      setNotice({ text: `${escursioni(fresh.length)} in "${folder.name}"` });
+      onTreksAdded?.();
+    } catch (err) {
+      setNotice({ text: errorMessage(err, "Errore nell'aggiunta alla cartella"), error: true });
+    }
+  }
+
+  const chip = (key: FolderFilter, label: string, count: number, folder?: Folder) => {
+    const droppable = folder != null && dragging;
+    return (
+      <button
+        key={key}
+        type="button"
+        role="tab"
+        aria-selected={value === key}
+        className={`${styles.chip} ${value === key ? styles.chipActive : ""} ${droppable ? styles.chipDrop : ""} ${droppable && dropOver === folder.id ? styles.chipDropOver : ""}`}
+        onClick={() => onChange(key)}
+        {...(folder && {
+          onDragOver: (e: React.DragEvent) => {
+            if (!isTrekDrag(e)) return;
+            e.preventDefault(); // senza, il browser non permette il rilascio
+            e.dataTransfer.dropEffect = "copy";
+            setDropOver(folder.id);
+          },
+          onDragLeave: () => setDropOver((cur) => (cur === folder.id ? null : cur)),
+          onDrop: (e: React.DragEvent) => onDrop(e, folder),
+        })}
+      >
+        {folder && <FolderIcon size={14} />}
+        <span className={styles.chipLabel}>{label}</span>
+        <span className={styles.count}>{count}</span>
+      </button>
+    );
+  };
 
   return (
     <div className={styles.bar}>
       <div className={styles.chips} role="tablist" aria-label="Filtra per cartella">
         {chip("all", "Tutti", treks.length)}
-        {folders.map((f) => chip(f.id, f.name, countIn(f.id), true))}
+        {folders.map((f) => chip(f.id, f.name, countIn(f.id), f))}
         {folders.length > 0 && withoutFolder > 0 && chip("none", "Senza cartella", withoutFolder)}
         <button type="button" className={`${styles.chip} ${styles.chipAdd}`} onClick={() => setNaming("new")}>
           + Cartella
         </button>
+        {notice && (
+          <span className={`${styles.notice} ${notice.error ? styles.noticeError : ""}`} role="status">{notice.text}</span>
+        )}
       </div>
 
       {active && (
         <div className={styles.activeTools}>
+          {!adding && (
+            <button type="button" className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => onAdd(active)} title={`Aggiungi escursioni a "${active.name}" dalla mappa`}>
+              + Aggiungi
+            </button>
+          )}
           <button type="button" className={styles.toolBtn} onClick={() => setNaming(active)} title="Rinomina cartella" aria-label={`Rinomina ${active.name}`}>
             <PencilIcon size={15} />
           </button>
@@ -153,8 +210,8 @@ function FolderDeleteDialog({ folder, trekCount, onClose, onDeleted }: { folder:
           {trekCount === 0
             ? "La cartella è vuota."
             : trekCount === 1
-              ? "La sua escursione non verrà eliminata: resterà nello storico senza cartella."
-              : `Le sue ${trekCount} escursioni non verranno eliminate: resteranno nello storico senza cartella.`}
+              ? "La sua escursione non verrà eliminata: resterà nello storico (e nelle altre cartelle in cui si trova)."
+              : `Le sue ${trekCount} escursioni non verranno eliminate: resteranno nello storico (e nelle altre cartelle in cui si trovano).`}
         </p>
         {error && <div className="alert alert-error">{error}</div>}
         <div className={dialogStyles.footer}>

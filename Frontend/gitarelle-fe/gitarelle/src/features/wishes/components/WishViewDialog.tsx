@@ -6,9 +6,9 @@ import Modal from "../../../shared/Modal";
 import TrackLayer from "../../../shared/TrackLayer";
 import FitWhenSized from "../../../shared/FitWhenSized";
 import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
-import { computeProfile, slopeColor, trackStats, type ProfilePoint } from "../../../shared/elevation";
-import { formatGain, formatKm } from "../../../shared/format";
-import { CalendarIcon, DistanceIcon, ElevationIcon, ExternalIcon, NotesIcon } from "../../../shared/icons";
+import { computeProfile, slopeColor, trackDuration, trackStats, type ProfilePoint } from "../../../shared/elevation";
+import { formatGain, formatKm, formatTrackDuration, trackDurationLabel } from "../../../shared/format";
+import { CalendarIcon, ClockIcon, DistanceIcon, ElevationIcon, ExternalIcon, NotesIcon } from "../../../shared/icons";
 import ElevationProfile from "../../treks/components/ElevationProfile";
 import { WISH_COLOR } from "../theme";
 // stessa impaginazione della scheda dei trek (info a sinistra, mappa a destra, profilo sotto)
@@ -27,6 +27,8 @@ type Props = {
 export default function WishViewDialog({ wish, gpx, onEdit, onClose }: Props) {
   const point = wish.lat != null && wish.lon != null ? { lat: wish.lat, lng: wish.lon } : gpx?.info.start ?? null;
   const stats = gpx ? trackStats(gpx) : null;
+  // un gpx registrato da qualcun altro dà il suo tempo reale in movimento; un percorso disegnato la stima
+  const duration = gpx ? trackDuration(gpx) : null;
   const profile = useMemo(() => (gpx ? computeProfile(gpx) : null), [gpx]);
   const [profilePoint, setProfilePoint] = useState<ProfilePoint | null>(null);
 
@@ -41,6 +43,7 @@ export default function WishViewDialog({ wish, gpx, onEdit, onClose }: Props) {
     },
     { label: "Distanza", icon: <DistanceIcon />, value: stats ? formatKm(stats.distance) : null },
     { label: "Dislivello", icon: <ElevationIcon />, value: stats?.gain != null ? `+${formatGain(stats.gain)}` : null },
+    { label: duration ? trackDurationLabel(duration) : "Tempo di percorrenza", icon: <ClockIcon />, value: duration ? formatTrackDuration(duration) : null },
   ];
 
   return (

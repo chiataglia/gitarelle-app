@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "trek")
@@ -29,13 +31,18 @@ public class Trek {
 
     private Double lon;
 
+    // regione italiana (o "Estero") calcolata dal punto o, se manca, dalla partenza del gpx: vedi RegionLocator
+    private String region;
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
-    // facoltativa: un trek può non stare in nessuna cartella
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "folder_id")
-    private Folder folder;
+    // un trek può stare in nessuna, una o più cartelle
+    @ManyToMany
+    @JoinTable(name = "trek_folder",
+            joinColumns = @JoinColumn(name = "trek_id"),
+            inverseJoinColumns = @JoinColumn(name = "folder_id"))
+    private Set<Folder> folders = new HashSet<>();
 
     // proprietario: ogni utente vede solo i propri dati (null solo per dati creati prima del login)
     @ManyToOne(fetch = FetchType.LAZY)
@@ -99,6 +106,14 @@ public class Trek {
         this.lon = lon;
     }
 
+    public String getRegion() {
+        return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }
@@ -107,12 +122,12 @@ public class Trek {
         this.createdAt = createdAt;
     }
 
-    public Folder getFolder() {
-        return folder;
+    public Set<Folder> getFolders() {
+        return folders;
     }
 
-    public void setFolder(Folder folder) {
-        this.folder = folder;
+    public void setFolders(Set<Folder> folders) {
+        this.folders = folders;
     }
 
     public AppUser getOwner() {

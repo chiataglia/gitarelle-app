@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import type { LatLngLiteral } from "leaflet";
-import type { FolderFilter, Trek } from "../types";
+import type { LatLngBounds, LatLngLiteral } from "leaflet";
+import { ABROAD, type FolderFilter, type Trek } from "../types";
 import TrekMap from "./TrekMap";
 import TrekClusterMap, { TRACK_ZOOM, type ClusterItem, type FocusRequest, type MapView } from "./TrekClusterMap";
 import TrekEditDialog from "./TrekEditDialog";
@@ -10,13 +10,14 @@ import TrekDeleteDialog from "./TrekDeleteDialog";
 import TrekTable from "./TrekTable";
 import FolderBar from "./FolderBar";
 import { useTreks } from "../TreksContext";
+import { startTrekDrag } from "../trekDrag";
 import { useGpxTracks } from "../../../shared/useGpxTracks";
-import { fetchGpxText, updateTrekLocation, uploadGpx } from "../api";
+import { addTreksToFolder, fetchGpxText, updateTrekLocation, uploadGpx } from "../api";
 import styles from "./TrekList.module.css";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
 import { errorMessage } from "../../../shared/api";
 import { colorForId } from "../../../shared/map";
-import { CollapseIcon, DistanceIcon, ElevationIcon, ExpandIcon, EyeIcon, PencilIcon, TrashIcon } from "../../../shared/icons";
+import { CollapseIcon, DistanceIcon, ElevationIcon, ExpandIcon, EyeIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
 import { useFullscreen } from "../../../shared/useFullscreen";
 
 const pointOf = (t: Trek): LatLngLiteral | null =>
@@ -28,15 +29,43 @@ type Mode = "detail" | "compare" | "all";
 const colorOf = colorForId;
 
 export default function TrekList() {
-  const { treks, folders, loading, error, upsertTrek } = useTreks();
+  const { treks, folders, loading, error, upsertTrek, upsertTreks } = useTreks();
   const [mode, setMode] = useState<Mode>("compare");
 
   // filtro per cartella: lista, dettaglio e confronto mostrano solo i trek visibili
   const [folderFilter, setFolderFilter] = useState<FolderFilter>("all");
-  const visibleTreks = folderFilter === "all"
-    ? treks
-    : treks.filter((t) => t.folderId === (folderFilter === "none" ? null : folderFilter));
   const activeFolder = typeof folderFilter === "number" ? folders.find((f) => f.id === folderFilter) : undefined;
+
+  // modalità "Aggiungi" della cartella aperta: lista e mappa mostrano i trek che NON ci sono ancora,
+  // ognuno con un "+" (sulla mappa accanto al pin); il filtro per regione aiuta a restringere la zona
+  const [addingId, setAddingId] = useState<number | null>(null);
+  const addingTo = addingId != null && addingId === activeFolder?.id ? activeFolder : undefined;
+  const [addedCount, setAddedCount] = useState(0);
+  const [addBusy, setAddBusy] = useState<Set<Trek["id"]>>(new Set());
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const folderTreks = addingTo
+    ? treks.filter((t) => !t.folderIds.includes(addingTo.id))
+    : folderFilter === "all"
+      ? treks
+      : folderFilter === "none"
+        ? treks.filter((t) => t.folderIds.length === 0)
+        : treks.filter((t) => t.folderIds.includes(folderFilter));
+
+  // filtro per regione (calcolata dal backend), da combinare con la cartella; null = tutte
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const visibleTreks = regionFilter ? folderTreks.filter((t) => t.region === regionFilter) : folderTreks;
+  // regioni con almeno un trek nella cartella scelta, in ordine alfabetico ed "Estero" in fondo
+  const regionCounts = new Map<string, number>();
+  for (const t of folderTreks) if (t.region) regionCounts.set(t.region, (regionCounts.get(t.region) ?? 0) + 1);
+  const regions = [...regionCounts.keys()].sort((a, b) =>
+    a === ABROAD ? 1 : b === ABROAD ? -1 : a.localeCompare(b, "it"));
+
+  // trek scelti con Ctrl/⌘+clic (o Maiusc+clic per un intervallo) da trascinare insieme su una cartella
+  const [picked, setPicked] = useState<Set<Trek["id"]>>(new Set());
+  const [pickAnchor, setPickAnchor] = useState<Trek["id"] | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const clearPicked = () => { setPicked(new Set()); setPickAnchor(null); };
 
   // si tiene l'id (non l'oggetto) così il dettaglio segue gli aggiornamenti della lista
   const [selectedId, setSelectedId] = useState<Trek["id"] | null>(null);
@@ -44,7 +73,8 @@ export default function TrekList() {
 
   // confronto: tutti i trek sono sulla mappa tranne quelli tolti a mano (così anche i nuovi compaiono subito)
   const [hidden, setHidden] = useState<Set<Trek["id"]>>(new Set());
-  const comparedTreks = visibleTreks.filter((t) => !hidden.has(t.id) && (t.hasGpx || pointOf(t)));
+  // (aggiungendo a una cartella si vedono tutti i candidati, anche quelli tolti a mano dalla mappa)
+  const comparedTreks = visibleTreks.filter((t) => (addingTo || !hidden.has(t.id)) && (t.hasGpx || pointOf(t)));
 
   // zoom e area inquadrata dalla mappa del confronto
   const [view, setView] = useState<MapView | null>(null);
@@ -55,13 +85,13 @@ export default function TrekList() {
   const inView = (p: LatLngLiteral | null | undefined) => zoomedIn && p != null && view.bounds.pad(0.5).contains(p);
 
   // trek aperti nei dialog: scheda (click sulla mappa del confronto, si modifica campo per campo),
-  // modifica completa (matita nella lista), eliminazione
+  // modifica completa (matita nella lista o nella scheda), eliminazione di uno o di quelli scelti
   const [viewingId, setViewingId] = useState<Trek["id"] | null>(null);
   const [editingId, setEditingId] = useState<Trek["id"] | null>(null);
-  const [deletingId, setDeletingId] = useState<Trek["id"] | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Trek["id"][] | null>(null);
   const viewing = treks.find((t) => t.id === viewingId) ?? null;
   const editing = treks.find((t) => t.id === editingId) ?? null;
-  const deleting = treks.find((t) => t.id === deletingId) ?? null;
+  const deleting = deletingIds ? treks.filter((t) => deletingIds.includes(t.id)) : [];
 
   // tracce gpx da scaricare: quella del trek selezionato, oppure nel confronto quelle inquadrate
   // (più quelle dei trek senza punto, anche se tolti dalla mappa: servono per sapere dove stanno
@@ -80,6 +110,16 @@ export default function TrekList() {
   // dove sta un trek sulla mappa: il suo punto o, se manca, la partenza del gpx
   const placeOf = (t: Trek): LatLngLiteral | null =>
     pointOf(t) ?? (t.hasGpx ? gpxTracks.trackOf(t.id)?.info.start ?? null : null);
+
+  // un trek cade in un'area se ci cade una parte qualunque della sua traccia (non solo la partenza):
+  // così zoomando su un tratto lontano dal pin la traccia resta disegnata e il trek resta in lista.
+  // Finché la traccia non è scaricata si guarda il punto
+  const fallsIn = (t: Trek, area: LatLngBounds) => {
+    const bounds = t.hasGpx ? gpxTracks.trackOf(t.id)?.bounds : null;
+    if (bounds) return area.intersects(bounds);
+    const p = placeOf(t);
+    return p != null && area.contains(p);
+  };
 
   // azioni: scelta punto e caricamento gpx
   const [picking, setPicking] = useState(false);
@@ -119,25 +159,79 @@ export default function TrekList() {
     });
   }
 
-  function onDeleted(id: Trek["id"]) {
-    setDeletingId(null);
-    if (selectedId === id) {
+  function onDeleted(ids: Trek["id"][]) {
+    setDeletingIds(null);
+    clearPicked();
+    if (viewingId != null && ids.includes(viewingId)) setViewingId(null);
+    if (selectedId != null && ids.includes(selectedId)) {
       setSelectedId(null);
       setPicking(false);
       setDraftPoint(null);
     }
   }
 
+  // ogni scelta di cartella o regione reinquadra la mappa sui suoi trek, anche se è quella già attiva
+  // (es. "Tutti" dopo l'apertura sull'ultimo trek aggiunto: si vedono tutti)
+  const [fitSeq, setFitSeq] = useState(0);
+
   function changeFolderFilter(f: FolderFilter) {
     setFolderFilter(f);
+    setAddingId(null);
+    setFitSeq((s) => s + 1);
     setPicking(false);
     setDraftPoint(null);
+    clearPicked();
+  }
+
+  // "+ Aggiungi" della cartella: si passa alla mappa con i trek che mancano, inquadrati tutti
+  function startAdding(folderId: number) {
+    if (mode !== "compare") changeMode("compare");
+    setAddingId(folderId);
+    setAddedCount(0);
+    setAddError(null);
+    setFitSeq((s) => s + 1);
+    clearPicked();
+  }
+
+  // "Fatto": si torna alla cartella, inquadrata con i trek appena aggiunti
+  function stopAdding() {
+    setAddingId(null);
+    setAddError(null);
+    setFitSeq((s) => s + 1);
+  }
+
+  async function addToFolder(t: Trek) {
+    if (!addingTo || addBusy.has(t.id)) return;
+    setAddBusy((prev) => new Set(prev).add(t.id));
+    setAddError(null);
+    try {
+      upsertTreks(await addTreksToFolder(addingTo.id, [t.id])); // esce dai candidati: sparisce da lista e mappa
+      setAddedCount((n) => n + 1);
+    } catch (err) {
+      setAddError(errorMessage(err, `Errore nell'aggiunta di "${t.title}"`));
+    } finally {
+      setAddBusy((prev) => {
+        const next = new Set(prev);
+        next.delete(t.id);
+        return next;
+      });
+    }
+  }
+
+  function changeRegionFilter(r: string | null) {
+    setRegionFilter(r);
+    setFitSeq((s) => s + 1);
+    setPicking(false);
+    setDraftPoint(null);
+    clearPicked();
   }
 
   function changeMode(m: Mode) {
     setMode(m);
+    if (m !== "compare") setAddingId(null); // l'aggiunta dalla mappa vive nel confronto
     setPicking(false);
     setDraftPoint(null);
+    clearPicked();
     setFocus(null); // la mappa si ricrea: non deve rivolare sull'ultimo trek cercato
   }
 
@@ -212,17 +306,53 @@ export default function TrekList() {
       trek: t,
     };
   });
+  // la mappa si apre sulla zona dell'ultimo trek aggiunto (tra quelli che hanno qualcosa da mostrare)
+  const lastAdded = compareItems.reduce<(typeof compareItems)[number] | null>(
+    (latest, i) => (!latest || i.trek.createdAt > latest.trek.createdAt ? i : latest), null);
+  const lastAddedKey = lastAdded?.key ?? null;
+
   // da vicino: tracce dei trek inquadrati
-  const trackItems = compareItems.filter((i) => i.trek.hasGpx && inView(i.point));
+  const trackItems = zoomedIn
+    ? compareItems.filter((i) => i.trek.hasGpx && fallsIn(i.trek, view.bounds.pad(0.5)))
+    : [];
 
   // nel confronto la lista mostra solo i trek che cadono nell'area inquadrata (anche quelli tolti
   // dalla mappa, per poterli rimettere); per vederli tutti c'è l'elenco
   const listedTreks = comparing
-    ? visibleTreks.filter((t) => {
-        const p = placeOf(t);
-        return p != null && (view == null || view.bounds.contains(p));
-      })
+    ? visibleTreks.filter((t) => (view == null ? placeOf(t) != null : fallsIn(t, view.bounds)))
     : visibleTreks;
+
+  // click su una card: con Ctrl/⌘ la sceglie per il trascinamento, con Maiusc sceglie l'intervallo
+  // dall'ultima scelta; un click normale fa il solito (zoom o dettaglio) e azzera la scelta
+  function onItemClick(e: React.MouseEvent, t: Trek) {
+    if (e.ctrlKey || e.metaKey) {
+      setPicked((prev) => {
+        const next = new Set(prev);
+        if (!next.delete(t.id)) next.add(t.id);
+        return next;
+      });
+      setPickAnchor(t.id);
+      return;
+    }
+    if (e.shiftKey && pickAnchor != null) {
+      const ids = listedTreks.map((x) => x.id);
+      const [a, b] = [ids.indexOf(pickAnchor), ids.indexOf(t.id)].sort((x, y) => x - y);
+      if (a >= 0) {
+        setPicked((prev) => new Set([...prev, ...ids.slice(a, b + 1)]));
+        return;
+      }
+    }
+    clearPicked();
+    if (comparing) zoomTo(t);
+    else select(t);
+  }
+
+  // si trascinano tutti i trek scelti se la card fa parte della scelta, altrimenti solo lei
+  function onItemDragStart(e: React.DragEvent, t: Trek) {
+    const ids = picked.has(t.id) ? listedTreks.filter((x) => picked.has(x.id)).map((x) => x.id) : [t.id];
+    startTrekDrag(e, ids, ids.length === 1 ? t.title : `${ids.length} escursioni`);
+    setDragging(true);
+  }
 
   // mappa allargabile a schermo intero
   const full = useFullscreen<HTMLDivElement>();
@@ -236,9 +366,15 @@ export default function TrekList() {
           <span>
             {treks.length === 0
               ? "Le escursioni salvate appariranno qui."
-              : folderFilter === "all"
+              : addingTo
+                ? [`${visibleTreks.length} escursioni non ancora in "${addingTo.name}"`, regionFilter].filter(Boolean).join(" · ")
+              : folderFilter === "all" && !regionFilter
                 ? `${treks.length} escursioni nel diario`
-                : `${visibleTreks.length} di ${treks.length} escursioni · ${activeFolder?.name ?? "senza cartella"}`}
+                : [
+                    `${visibleTreks.length} di ${treks.length} escursioni`,
+                    folderFilter !== "all" && (activeFolder?.name ?? "senza cartella"),
+                    regionFilter,
+                  ].filter(Boolean).join(" · ")}
           </span>
         </div>
         {treks.length > 0 && (
@@ -254,7 +390,26 @@ export default function TrekList() {
 
       {!loading && !error && (
         <div className={styles.toolbar}>
-          <FolderBar value={folderFilter} onChange={changeFolderFilter} />
+          <FolderBar
+            value={folderFilter}
+            onChange={changeFolderFilter}
+            dragging={dragging}
+            onTreksAdded={clearPicked}
+            onAdd={(f) => startAdding(f.id)}
+            adding={addingTo != null}
+          />
+          {(regions.length > 0 || regionFilter) && (
+            <label className={`${styles.regionFilter} ${regionFilter ? styles.regionFilterOn : ""}`} title="Filtra per regione">
+              <PinIcon size={14} />
+              <span className="sr-only">Regione</span>
+              <select value={regionFilter ?? ""} onChange={(e) => changeRegionFilter(e.target.value || null)}>
+                <option value="">Tutte le regioni</option>
+                {/* la regione scelta resta tra le opzioni anche se nella cartella attuale non ha trek */}
+                {regionFilter && !regionCounts.has(regionFilter) && <option value={regionFilter}>{regionFilter} (0)</option>}
+                {regions.map((r) => <option key={r} value={r}>{r} ({regionCounts.get(r)})</option>)}
+              </select>
+            </label>
+          )}
           {comparing && treks.length > 0 && (
             <div className={styles.toolbarActions}>
               <span className={styles.counter}>{comparedTreks.length} sulla mappa</span>
@@ -276,7 +431,7 @@ export default function TrekList() {
           folders={folders}
           onView={(t) => setViewingId(t.id)}
           onEdit={(t) => setEditingId(t.id)}
-          onDelete={(t) => setDeletingId(t.id)}
+          onDelete={(t) => setDeletingIds([t.id])}
           onShowOnMap={showOnMap}
         />
       ) : (
@@ -295,8 +450,51 @@ export default function TrekList() {
           )}
           {!loading && !error && treks.length > 0 && visibleTreks.length === 0 && (
             <div className={styles.empty}>
-              Nessuna escursione {activeFolder ? `in "${activeFolder.name}"` : "senza cartella"}. Spostale qui con la ✎ su ogni trek.
+              {addingTo
+                ? `Tutte le escursioni${regionFilter ? ` in ${regionFilter === ABROAD ? "estero" : regionFilter}` : ""} sono già in "${addingTo.name}".`
+                : regionFilter
+                ? `Nessuna escursione in ${regionFilter === ABROAD ? "estero" : regionFilter}${activeFolder ? ` nella cartella "${activeFolder.name}"` : folderFilter === "none" ? " senza cartella" : ""}.`
+                : activeFolder
+                  ? `Nessuna escursione in "${activeFolder.name}". Aggiungile con "+ Aggiungi" o trascinale sulla cartella da "Tutti".`
+                  : "Nessuna escursione senza cartella."}
             </div>
+          )}
+
+          {addingTo && (
+            <div className={styles.addBar}>
+              <span>
+                Aggiungi a <b>"{addingTo.name}"</b>: premi <b className={styles.addPlus}>+</b> sulla mappa o nella lista
+                {addedCount > 0 && <> · <b>{addedCount}</b> {addedCount === 1 ? "aggiunta" : "aggiunte"}</>}
+              </span>
+              <button type="button" className="btn btn-primary btn-sm" onClick={stopAdding}>Fatto</button>
+            </div>
+          )}
+          {addError && <div className="alert alert-error">{addError}</div>}
+
+          {/* scelta multipla: da trascinare su una cartella o da eliminare insieme */}
+          {!addingTo && listedTreks.length > 0 && (
+            picked.size > 0 ? (
+              <div className={styles.pickBar}>
+                <span>
+                  <b>{picked.size}</b> {picked.size === 1 ? "scelta" : "scelte"}{folders.length > 0 && ": trascinale su una cartella"}
+                </span>
+                <div className={styles.pickActions}>
+                  {picked.size < listedTreks.length && (
+                    <button type="button" className={styles.linkBtn} onClick={() => setPicked(new Set(listedTreks.map((t) => t.id)))}>
+                      Tutte ({listedTreks.length})
+                    </button>
+                  )}
+                  <button type="button" className={styles.linkBtn} onClick={clearPicked}>Deseleziona</button>
+                  <button type="button" className={`btn btn-sm ${styles.pickDelete}`} onClick={() => setDeletingIds([...picked])}>
+                    <TrashIcon size={14} /> Elimina
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className={styles.pickTip}>
+                Ctrl+clic (o Maiusc+clic) per sceglierne più d'una: {folders.length > 0 ? "trascinale su una cartella o eliminale insieme" : "eliminale insieme"}
+              </p>
+            )
           )}
           {comparing && visibleTreks.length > 0 && listedTreks.length === 0 && (
             <div className={styles.empty}>
@@ -311,11 +509,17 @@ export default function TrekList() {
               const compareColor = !hidden.has(t.id) && !nothingToShow ? colorOf(t.id) : undefined;
               const active = comparing ? compareColor != null : selectedId === t.id;
               return (
-                <li key={t.id} className={styles.row}>
+                <li
+                  key={t.id}
+                  className={styles.row}
+                  draggable={folders.length > 0}
+                  onDragStart={(e) => onItemDragStart(e, t)}
+                  onDragEnd={() => setDragging(false)}
+                >
                   <button
                     type="button"
-                    onClick={() => (comparing ? zoomTo(t) : select(t))}
-                    className={`${styles.item} ${active ? styles.itemActive : ""} ${comparing ? styles.itemWithEye : styles.itemWithTools}`}
+                    onClick={(e) => onItemClick(e, t)}
+                    className={`${styles.item} ${active ? styles.itemActive : ""} ${picked.has(t.id) ? styles.itemPicked : ""} ${addingTo ? styles.itemWithTwo : comparing ? styles.itemWithEye : styles.itemWithTools}`}
                     aria-pressed={comparing ? undefined : active}
                     disabled={comparing && nothingToShow}
                     title={comparing ? (nothingToShow ? "Nessun punto né traccia da mostrare" : "Zoom sul percorso") : undefined}
@@ -361,6 +565,18 @@ export default function TrekList() {
                     )}
                   </button>
                   <div className={styles.tools}>
+                    {addingTo && (
+                      <button
+                        type="button"
+                        className={`${styles.toolBtn} ${styles.toolAdd}`}
+                        onClick={() => addToFolder(t)}
+                        disabled={addBusy.has(t.id)}
+                        title={`Aggiungi a "${addingTo.name}"`}
+                        aria-label={`Aggiungi ${t.title} a ${addingTo.name}`}
+                      >
+                        +
+                      </button>
+                    )}
                     <button type="button" className={styles.toolBtn} onClick={() => setViewingId(t.id)} title="Dettagli" aria-label={`Dettagli di ${t.title}`}>
                       <EyeIcon />
                     </button>
@@ -369,7 +585,7 @@ export default function TrekList() {
                         <button type="button" className={styles.toolBtn} onClick={() => setEditingId(t.id)} title="Modifica" aria-label={`Modifica ${t.title}`}>
                           <PencilIcon />
                         </button>
-                        <button type="button" className={`${styles.toolBtn} ${styles.toolDanger}`} onClick={() => setDeletingId(t.id)} title="Elimina" aria-label={`Elimina ${t.title}`}>
+                        <button type="button" className={`${styles.toolBtn} ${styles.toolDanger}`} onClick={() => setDeletingIds([t.id])} title="Elimina" aria-label={`Elimina ${t.title}`}>
                           <TrashIcon />
                         </button>
                       </>
@@ -384,7 +600,7 @@ export default function TrekList() {
         <div ref={full.ref} className={`map-frame ${styles.mapCol} ${full.fallback ? styles.mapColFull : ""}`}>
           <button
             type="button"
-            className={styles.fullBtn}
+            className={`gt-map-btn ${styles.fullBtn}`}
             onClick={full.toggle}
             title={full.isFullscreen ? "Esci da schermo intero (Esc)" : "Schermo intero"}
             aria-label={full.isFullscreen ? "Esci da schermo intero" : "Mappa a schermo intero"}
@@ -397,9 +613,14 @@ export default function TrekList() {
               <TrekClusterMap
                 items={compareItems}
                 tracks={trackItems}
-                fitKey={String(folderFilter)}
+                fitKey={String(fitSeq)}
+                startKey={lastAddedKey}
                 onViewChange={setView}
                 onSelect={(key) => setViewingId(comparedTreks.find((t) => String(t.id) === key)?.id ?? null)}
+                onAdd={addingTo ? (key) => {
+                  const t = comparedTreks.find((x) => String(x.id) === key);
+                  if (t) addToFolder(t);
+                } : undefined}
                 focus={focus}
               />
               {compareItems.length === 0 ? (
@@ -481,10 +702,13 @@ export default function TrekList() {
           gpx={viewing.hasGpx ? gpxTracks.trackOf(viewing.id) : null}
           color={colorOf(viewing.id)}
           onClose={() => setViewingId(null)}
+          // modifica ed eliminazione si aprono sopra la scheda, che resta (e si aggiorna) sotto
+          onEdit={() => setEditingId(viewing.id)}
+          onDelete={() => setDeletingIds([viewing.id])}
         />
       )}
       {editing && <TrekEditDialog key={editing.id} trek={editing} onClose={() => setEditingId(null)} />}
-      {deleting && <TrekDeleteDialog trek={deleting} onClose={() => setDeletingId(null)} onDeleted={onDeleted} />}
+      {deleting.length > 0 && <TrekDeleteDialog treks={deleting} onClose={() => setDeletingIds(null)} onDeleted={onDeleted} />}
     </div>
   );
 }

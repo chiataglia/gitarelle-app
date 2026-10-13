@@ -110,7 +110,7 @@ public class StatsService {
         Map<Long, String> folderNames = folders.stream().collect(Collectors.toMap(Folder::getId, Folder::getName));
         Map<String, Integer> perFolder = new HashMap<>();
         for (Trek t : treks) {
-            if (t.getFolder() != null) perFolder.merge(folderNames.get(t.getFolder().getId()), 1, Integer::sum);
+            for (Folder f : t.getFolders()) perFolder.merge(folderNames.get(f.getId()), 1, Integer::sum);
         }
 
         int withGpx = metrics.size();

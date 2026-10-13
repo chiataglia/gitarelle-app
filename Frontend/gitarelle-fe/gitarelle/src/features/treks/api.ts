@@ -17,9 +17,13 @@ export const createFolder = (name: string) => apiJson<Folder>("/folders", json({
 export const renameFolder = (id: Folder["id"], name: string) =>
   apiJson<Folder>(`/folders/${id}`, { ...json({ name }), method: "PUT" });
 
-// i trek della cartella restano, senza cartella
+// i trek della cartella restano (nelle altre cartelle o senza)
 export const deleteFolder = (id: Folder["id"]) =>
   apiFetch(`/folders/${id}`, { method: "DELETE" }).then(() => undefined);
+
+// aggiunge i trek alla cartella (quelli già dentro restano): restituisce i trek aggiornati
+export const addTreksToFolder = (id: Folder["id"], trekIds: Trek["id"][]) =>
+  apiJson<Trek[]>(`/folders/${id}/treks`, json({ trekIds }));
 
 export const createTrek = (payload: TrekPayload) => apiJson<Trek>("/treks", json(payload));
 
@@ -30,6 +34,10 @@ export const updateTrek = (trekId: Trek["id"], payload: TrekPayload) =>
 // elimina il trek e l'eventuale gpx
 export const deleteTrek = (trekId: Trek["id"]) =>
   apiFetch(`/treks/${trekId}`, { method: "DELETE" }).then(() => undefined);
+
+// elimina più trek (e i loro gpx) in una volta: tutti o nessuno
+export const deleteTreks = (trekIds: Trek["id"][]) =>
+  apiFetch("/treks/delete", json({ trekIds })).then(() => undefined);
 
 export const updateTrekLocation = (trekId: Trek["id"], lat: number, lon: number) =>
   apiJson<Trek>(`/treks/${trekId}/location`, { ...json({ lat, lon }), method: "PUT" });

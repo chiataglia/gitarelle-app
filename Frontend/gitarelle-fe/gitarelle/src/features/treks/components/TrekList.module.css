@@ -179,27 +179,12 @@
   height: 100dvh;
 }
 
-/* sotto i pulsanti +/- di leaflet, con lo stesso aspetto */
+/* sotto i pulsanti +/- di leaflet (alti 10 + 2×34 + bordi = 81px); l'aspetto è .gt-map-btn in index.css */
 .fullBtn {
   position: absolute;
   z-index: 1000;
-  top: 84px;
+  top: 87px;
   left: 10px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-content: center;
-  padding: 0;
-  border-radius: 4px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
-  background: #fff;
-  background-clip: padding-box;
-  color: #333;
-  cursor: pointer;
-}
-
-.fullBtn:hover {
-  background-color: #f4f4f4;
 }
 
 .detail {
@@ -393,6 +378,53 @@
   margin-bottom: 12px;
 }
 
+/* filtro per regione: un select compatto con l'aspetto delle chip delle cartelle */
+.regionFilter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 4px 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.regionFilter:hover,
+.regionFilter:focus-within {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.regionFilterOn,
+.regionFilterOn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.regionFilter select {
+  width: auto;
+  padding: 5px 8px 5px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: inherit;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.regionFilter select:focus {
+  background: transparent;
+  box-shadow: none;
+}
+
+.regionFilter option {
+  color: var(--text);
+  background: var(--bg-2);
+}
+
 .toolbarActions {
   display: flex;
   flex-wrap: wrap;
@@ -526,6 +558,89 @@
   position: relative;
 }
 
+/* trek scelti (Ctrl/⌘+clic) da trascinare insieme su una cartella */
+.itemPicked,
+.itemPicked:hover {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.row[draggable="true"] .item {
+  cursor: grab;
+}
+
+.row[draggable="true"] .item:active {
+  cursor: grabbing;
+}
+
+.pickBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text);
+  background: rgba(242, 165, 65, 0.12);
+  border: 1px solid rgba(242, 165, 65, 0.4);
+}
+
+/* barra della modalità "Aggiungi" sopra la lista */
+.addBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: rgba(242, 165, 65, 0.12);
+  border: 1px solid var(--accent);
+}
+
+.addPlus {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-weight: 800;
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.pickActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: none;
+}
+
+/* elimina i trek scelti: discreto finché non ci si passa sopra */
+.pickDelete {
+  gap: 6px;
+  color: var(--danger);
+  background: transparent;
+  border: 1px solid rgba(255, 123, 114, 0.45);
+}
+
+.pickDelete:hover {
+  color: var(--accent-ink);
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.pickTip {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* spazio a destra per i bottoni sopra la card: occhio, matita e cestino (dettaglio) o solo occhio (confronto) */
 .itemWithTools {
   padding-right: 116px;
@@ -533,6 +648,11 @@
 
 .itemWithEye {
   padding-right: 48px;
+}
+
+/* modalità "Aggiungi": "+" e occhio */
+.itemWithTwo {
+  padding-right: 82px;
 }
 
 /* il titolo apre la scheda del trek */
@@ -579,6 +699,23 @@
   color: var(--accent);
   border-color: var(--accent);
   background: rgba(242, 165, 65, 0.12);
+}
+
+/* "+" per aggiungere il trek alla cartella aperta: pieno, è l'azione principale della modalità */
+.toolAdd {
+  font: 800 18px/1 var(--font-body);
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+.toolAdd:hover {
+  color: var(--accent-ink);
+  background: var(--accent-hover);
+}
+
+.toolAdd:disabled {
+  opacity: 0.5;
+  cursor: progress;
 }
 
 .toolDanger:hover {

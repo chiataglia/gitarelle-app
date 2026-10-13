@@ -5,18 +5,31 @@ import L from "leaflet";
 // Italia intera, isole comprese
 export const ITALY_BOUNDS = L.latLngBounds([36.6, 6.6], [47.1, 18.6]);
 
-// Mappa tenuta sull'Italia: parte inquadrandola, non si allontana oltre (zoom minimo = Italia intera)
-// e non si trascina lontano. Da mettere dentro un <MapContainer maxBoundsViscosity={1}>, prima di chi inquadra altro.
+// Inquadratura di partenza sull'Italia intera; poi la mappa si sposta liberamente, anche fuori.
+// Da mettere dentro un <MapContainer>, prima di chi inquadra altro (traccia, ultimo trek...).
+// Prima di inquadrare si fa rileggere la misura a leaflet: una mappa nata dentro un dialog ancora chiuso
+// misura 0 pixel e leaflet se la ricorda (inquadrare con quella misura porta allo zoom minimo: il mondo intero).
+// Con la misura già presa si inquadra subito, così chi viene dopo (ultimo trek, punto, traccia) ha l'ultima
+// parola; solo se il contenitore è ancora a 0 si aspetta che la prenda
 export default function ItalyView() {
   const map = useMap();
   useEffect(() => {
-    map.setMaxBounds(ITALY_BOUNDS.pad(0.15));
-    map.fitBounds(ITALY_BOUNDS, { animate: false });
-    // lo zoom minimo dipende dalla forma della mappa: si ricalcola quando cambia misura (es. schermo intero)
-    const updateMinZoom = () => map.setMinZoom(map.getBoundsZoom(ITALY_BOUNDS));
-    updateMinZoom();
-    const ro = new ResizeObserver(updateMinZoom);
-    ro.observe(map.getContainer());
+    const container = map.getContainer();
+    const sized = () => container.clientWidth > 0 && container.clientHeight > 0;
+    const fit = () => {
+      map.invalidateSize();
+      map.fitBounds(ITALY_BOUNDS, { animate: false });
+    };
+    if (sized()) {
+      fit();
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      if (!sized()) return;
+      ro.disconnect();
+      fit();
+    });
+    ro.observe(container);
     return () => ro.disconnect();
   }, [map]);
   return null;

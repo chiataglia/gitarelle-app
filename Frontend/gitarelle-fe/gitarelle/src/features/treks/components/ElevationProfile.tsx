@@ -20,14 +20,21 @@ const AREA_OPACITY = 0.35;   // opacità dell'area sotto il bordo (1 = piena com
 const LEGEND_MAX = 35;
 const LEGEND_TICKS: [string, number][] = [["piano", 0], ["10%", 10], ["20%", 20], ["30%+", 30]];
 
+// punto notevole da segnare sul profilo (es. le tappe di un percorso disegnato), con lo stesso numero e
+// colore del pin sulla mappa
+export type ProfileMarker = { d: number; label: string; kind: "start" | "via" | "end" };
+
+const MARKER_FILL: Record<ProfileMarker["kind"], string> = { start: "var(--fresh)", via: "var(--text)", end: "var(--accent)" };
+
 type Props = {
   profile: Profile;
   onHover?: (point: ProfilePoint | null) => void; // per mostrare il punto sulla mappa
+  markers?: ProfileMarker[];
 };
 
 // Profilo altimetrico: quota (y) sulla distanza (x, km), area colorata secondo la pendenza.
 // Una sola serie: niente legenda di serie, solo la scala dei colori della pendenza sotto.
-export default function ElevationProfile({ profile, onHover }: Props) {
+export default function ElevationProfile({ profile, onHover, markers }: Props) {
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -88,6 +95,9 @@ export default function ElevationProfile({ profile, onHover }: Props) {
   };
 
   const hp = hover != null ? points[hover] : null;
+
+  // quota alla distanza d: i punti sono a passo costante, quindi l'indice si ricava direttamente
+  const eleAt = (d: number) => points[Math.min(Math.max(Math.round((d / distance) * (points.length - 1)), 0), points.length - 1)]?.ele ?? minEle;
   const summary = `Profilo altimetrico: ${fmt(km, 1)} km, quota da ${fmt(minEle)} a ${fmt(maxEle)} metri`;
   // la legenda campiona slopeColor ogni 0,5%, così mostra gli stessi passaggi netti del grafico
   const legendStops = Array.from({ length: LEGEND_MAX * 2 + 1 }, (_, i) => `${slopeColor(i / 2)} ${(i / 2 / LEGEND_MAX) * 100}%`);
@@ -133,6 +143,18 @@ export default function ElevationProfile({ profile, onHover }: Props) {
             <path d={line} fill="none" stroke="#223a2d" strokeWidth={LINE_WIDTH + 2 * SEPARATOR_WIDTH}
               strokeLinejoin="round" strokeLinecap="round" />
             <path d={line} fill="none" stroke={`url(#${gradientId})`} strokeWidth={LINE_WIDTH} strokeLinejoin="round" strokeLinecap="round" />
+
+            {/* tappe: cerchietto numerato sulla linea, con una guida tenue fino all'asse */}
+            {markers?.map((m, i) => {
+              const cx = x(Math.min(Math.max(m.d, 0), distance)), cy = y(eleAt(m.d));
+              return (
+                <g key={i} pointerEvents="none">
+                  <line x1={cx} x2={cx} y1={cy} y2={top + innerH} className={styles.markerGuide} />
+                  <circle cx={cx} cy={cy} r={9} fill={MARKER_FILL[m.kind]} className={styles.marker} />
+                  <text x={cx} y={cy} className={styles.markerLabel} textAnchor="middle" dominantBaseline="central">{m.label}</text>
+                </g>
+              );
+            })}
 
             {/* mirino */}
             {hp && (

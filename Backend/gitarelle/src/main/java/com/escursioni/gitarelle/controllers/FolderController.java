@@ -2,6 +2,8 @@ package com.escursioni.gitarelle.controllers;
 
 import com.escursioni.gitarelle.dto.FolderRequestDto;
 import com.escursioni.gitarelle.dto.FolderResponseDto;
+import com.escursioni.gitarelle.dto.FolderTreksRequestDto;
+import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.services.FolderService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,10 +36,16 @@ public class FolderController {
         return this.folderService.renameFolder(id, requestDto);
     }
 
-    // I trek della cartella non vengono eliminati: restano senza cartella
+    // I trek della cartella non vengono eliminati: restano nelle altre cartelle o senza
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         this.folderService.deleteFolder(id);
+    }
+
+    // Aggiunge uno o più trek alla cartella; restituisce i trek aggiornati
+    @PostMapping("/{id}/treks")
+    public List<TrekResponseDto> addTreks(@PathVariable Long id, @Valid @RequestBody FolderTreksRequestDto requestDto) {
+        return this.folderService.addTreks(id, requestDto);
     }
 }

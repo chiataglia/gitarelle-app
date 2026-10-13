@@ -12,9 +12,10 @@ type TreksContextValue = {
   error: string | null;
   reload: () => Promise<void>;
   upsertTrek: (trek: Trek) => void; // aggiunge un trek nuovo o sostituisce quello con lo stesso id
+  upsertTreks: (treks: Trek[]) => void;
   removeTrek: (id: Trek["id"]) => void;
   upsertFolder: (folder: Folder) => void;
-  removeFolder: (id: Folder["id"]) => void; // i suoi trek restano, senza cartella
+  removeFolder: (id: Folder["id"]) => void; // i suoi trek restano (nelle altre cartelle o senza)
 };
 
 const TreksContext = createContext<TreksContextValue | null>(null);
@@ -41,13 +42,15 @@ export function TreksProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const upsertTrek = useCallback((trek: Trek) => {
-    setTreks((prev) =>
-      prev.some((t) => t.id === trek.id)
-        ? prev.map((t) => (t.id === trek.id ? trek : t))
-        : [...prev, trek]
-    );
+  const upsertTreks = useCallback((updated: Trek[]) => {
+    setTreks((prev) => {
+      const byId = new Map(updated.map((t) => [t.id, t]));
+      const known = new Set(prev.map((t) => t.id));
+      return [...prev.map((t) => byId.get(t.id) ?? t), ...updated.filter((t) => !known.has(t.id))];
+    });
   }, []);
+
+  const upsertTrek = useCallback((trek: Trek) => upsertTreks([trek]), [upsertTreks]);
 
   const removeTrek = useCallback((id: Trek["id"]) => {
     setTreks((prev) => prev.filter((t) => t.id !== id));
@@ -59,7 +62,7 @@ export function TreksProvider({ children }: { children: ReactNode }) {
 
   const removeFolder = useCallback((id: Folder["id"]) => {
     setFolders((prev) => prev.filter((f) => f.id !== id));
-    setTreks((prev) => prev.map((t) => (t.folderId === id ? { ...t, folderId: null } : t)));
+    setTreks((prev) => prev.map((t) => (t.folderIds.includes(id) ? { ...t, folderIds: t.folderIds.filter((f) => f !== id) } : t)));
   }, []);
 
   useEffect(() => {
@@ -67,7 +70,7 @@ export function TreksProvider({ children }: { children: ReactNode }) {
   }, [reload]);
 
   return (
-    <TreksContext.Provider value={{ treks, folders, loading, error, reload, upsertTrek, removeTrek, upsertFolder, removeFolder }}>
+    <TreksContext.Provider value={{ treks, folders, loading, error, reload, upsertTrek, upsertTreks, removeTrek, upsertFolder, removeFolder }}>
       {children}
     </TreksContext.Provider>
   );

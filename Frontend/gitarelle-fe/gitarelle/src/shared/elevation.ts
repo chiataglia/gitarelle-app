@@ -30,6 +30,13 @@ function haversine(a: Position, b: Position) {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
+// lunghezza (m) di una linea [lon, lat, ...], misurata come nel profilo
+export function lineDistance(coords: Position[]): number {
+  let d = 0;
+  for (let i = 1; i < coords.length; i++) d += haversine(coords[i - 1], coords[i]);
+  return d;
+}
+
 // segmenti della traccia (o della rotta) in ordine; i waypoint isolati non contano
 function segments(gpx: ParsedGpx): Position[][] {
   const out: Position[][] = [];
@@ -67,6 +74,95 @@ export function trackStats(gpx: ParsedGpx): TrackStats {
   const stats = { distance, gain: hasEle ? gain : null, loss: hasEle ? loss : null };
   statsCache.set(gpx, stats);
   return stats;
+}
+
+// Tempo di percorrenza secondo la DIN 33466 (quella dei club alpini tedesco e austriaco):
+// 4 km/h in piano, 300 m/h in salita, 500 m/h in discesa; si somma il tempo maggiore
+// tra orizzontale e verticale con metà del minore. Escluse le soste.
+// null se la traccia non ha quote: senza dislivello la stima sarebbe fuorviante.
+export function hikingMinutes(stats: TrackStats): number | null {
+  if (stats.gain == null || stats.loss == null) return null;
+  const horizontal = (stats.distance / 1000 / 4) * 60;
+  const vertical = (stats.gain / 300 + stats.loss / 500) * 60;
+  return Math.max(horizontal, vertical) + Math.min(horizontal, vertical) / 2;
+}
+
+const MOVE_WINDOW_S = 30; // la velocità si misura su tratti di almeno 30 s: i saltelli del gps da fermi non sono cammino
+const MIN_SPEED = 0.25;   // m/s in pianta (~0,9 km/h): sotto si è fermi...
+const MIN_CLIMB = 0.04;   // ...a meno di salire o scendere di almeno ~150 m/h (ferrate, salite ripide: si avanza poco in pianta)
+
+// segmenti della traccia con l'orario di ogni punto (ms), dove il gpx lo registra
+function timedSegments(gpx: ParsedGpx): { p: Position; t: number }[][] {
+  const out: { p: Position; t: number }[][] = [];
+  const add = (coords: Position[], times: unknown) => {
+    if (!Array.isArray(times)) return;
+    const seg: { p: Position; t: number }[] = [];
+    coords.forEach((p, i) => {
+      const t = typeof times[i] === "string" ? Date.parse(times[i]) : NaN;
+      if (Number.isFinite(t)) seg.push({ p, t });
+    });
+    out.push(seg);
+  };
+  for (const f of gpx.geojson.features) {
+    const g = f.geometry;
+    const times = f.properties?.coordinateProperties?.times; // togeojson: un array per linea
+    if (g?.type === "LineString") add(g.coordinates, times);
+    else if (g?.type === "MultiLineString") g.coordinates.forEach((c, k) => add(c, Array.isArray(times) ? times[k] : undefined));
+  }
+  return out;
+}
+
+const movingCache = new WeakMap<ParsedGpx, number | null>();
+
+// Tempo in movimento registrato nel gpx (minuti), soste escluse; null se i punti non hanno l'orario
+// (percorsi disegnati o esportati senza tempi). Un tratto conta se ci si è spostati abbastanza in pianta
+// o in quota; le pause, anche con la registrazione sospesa e ripresa nello stesso punto, restano fuori
+export function movingMinutes(gpx: ParsedGpx): number | null {
+  if (movingCache.has(gpx)) return movingCache.get(gpx)!;
+  let moving = 0, timed = false;
+  for (const pts of timedSegments(gpx)) {
+    let i = 0;
+    while (i < pts.length - 1) {
+      let j = i + 1;
+      while (j < pts.length - 1 && pts[j].t - pts[i].t < MOVE_WINDOW_S * 1000) j++;
+      const dt = (pts[j].t - pts[i].t) / 1000;
+      if (dt > 0) {
+        timed = true;
+        const [a, b] = [pts[i].p, pts[j].p];
+        const climb = typeof a[2] === "number" && typeof b[2] === "number" ? Math.abs(b[2] - a[2]) : 0;
+        if (haversine(a, b) / dt >= MIN_SPEED || climb / dt >= MIN_CLIMB) moving += dt;
+      }
+      i = j;
+    }
+  }
+  const result = timed ? moving / 60 : null;
+  movingCache.set(gpx, result);
+  return result;
+}
+
+// Orari registrati nel gpx: partenza e arrivo (ms) e tempo in movimento; null se i punti non hanno l'orario
+export type RecordedTimes = { start: number; end: number; movingMinutes: number };
+
+export function recordedTimes(gpx: ParsedGpx): RecordedTimes | null {
+  let start = Infinity, end = -Infinity;
+  for (const seg of timedSegments(gpx)) {
+    for (const { t } of seg) {
+      if (t < start) start = t;
+      if (t > end) end = t;
+    }
+  }
+  const moving = movingMinutes(gpx);
+  return end > start && moving != null ? { start, end, movingMinutes: moving } : null;
+}
+
+// Tempo da mostrare per una traccia: quello registrato nel gpx se ci sono gli orari, altrimenti la stima DIN 33466
+export type TrackDuration = { minutes: number; recorded: boolean };
+
+export function trackDuration(gpx: ParsedGpx): TrackDuration | null {
+  const recorded = movingMinutes(gpx);
+  if (recorded != null && recorded > 0) return { minutes: recorded, recorded: true };
+  const estimate = hikingMinutes(trackStats(gpx));
+  return estimate != null ? { minutes: estimate, recorded: false } : null;
 }
 
 // Profilo altimetrico ricampionato a passo costante, con quota smussata e pendenza.

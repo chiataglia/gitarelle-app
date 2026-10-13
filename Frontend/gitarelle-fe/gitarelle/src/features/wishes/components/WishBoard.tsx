@@ -3,9 +3,9 @@ import type { Wish } from "../types";
 import { fetchWishes, fetchWishGpxText } from "../api";
 import { errorMessage } from "../../../shared/api";
 import { useGpxTracks } from "../../../shared/useGpxTracks";
-import { trackStats } from "../../../shared/elevation";
-import { formatGain, formatKm } from "../../../shared/format";
-import { DistanceIcon, ElevationIcon, ExternalIcon, EyeIcon, FlagIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
+import { trackDuration, trackStats } from "../../../shared/elevation";
+import { formatGain, formatKm, formatTrackDuration, trackDurationLabel } from "../../../shared/format";
+import { ClockIcon, DistanceIcon, ElevationIcon, ExternalIcon, EyeIcon, FlagIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
 import WishMap, { type WishMapItem } from "./WishMap";
 import WishViewDialog from "./WishViewDialog";
 import WishFormDialog from "./WishFormDialog";
@@ -86,7 +86,7 @@ export default function WishBoard() {
           <span className="eyebrow">Da fare</span>
           <h2>Prossime avventure</h2>
           <p>
-            I tour che vuoi fare, prima o poi. Basta un nome; se vuoi aggiungi il punto, un link (Komoot, Wikiloc...) o la traccia GPX, anche disegnandola sulla mappa.
+            I tour che vuoi fare, prima o poi. Basta un nome; se vuoi disegna il percorso sulla mappa o carica la traccia GPX, e aggiungi un link (Komoot, Wikiloc...).
           </p>
         </div>
         <button type="button" className={`btn ${styles.btnWish}`} onClick={() => setEditing("new")}>
@@ -135,6 +135,7 @@ export default function WishBoard() {
                   const active = w.id === selectedId;
                   const gpx = w.hasGpx ? gpxTracks.trackOf(w.id) : null;
                   const stats = gpx ? trackStats(gpx) : null;
+                  const duration = gpx ? trackDuration(gpx) : null;
                   const gpxError = w.hasGpx && gpxTracks.errorOf(w.id);
                   const kind = w.hasGpx ? "Traccia GPX" : pointOf(w) ? "Solo il punto" : "Solo l'idea";
                   const tools = w.link ? 4 : 3;
@@ -168,6 +169,7 @@ export default function WishBoard() {
                           <div className={styles.metrics}>
                             {stats.gain != null && <span title="Dislivello positivo"><ElevationIcon size={13} />{formatGain(stats.gain)}</span>}
                             <span title="Distanza"><DistanceIcon size={13} />{formatKm(stats.distance)}</span>
+                            {duration && <span title={trackDurationLabel(duration)}><ClockIcon size={13} />{formatTrackDuration(duration)}</span>}
                           </div>
                         ) : gpxError ? (
                           <span className={styles.badgeError}>GPX non caricato</span>
@@ -197,7 +199,7 @@ export default function WishBoard() {
 
             <div className={`map-frame ${styles.map}`}>
               <WishMap items={mapItems} selectedId={selectedId} onSelect={(id) => select(id, "map")} />
-              {!loading && onMapCount === 0 && <div className={styles.mapHint}>Nessuna idea ha ancora un punto o una traccia</div>}
+              {!loading && onMapCount === 0 && <div className={styles.mapHint}>Nessuna idea ha ancora un percorso</div>}
             </div>
           </div>
         </>

@@ -27,7 +27,7 @@ export default function TrekCreate() {
   const [trekDate, setTrekDate] = useState(today);
   const [amichetti, setAmichetti] = useState("");
   const [notes, setNotes] = useState("");
-  const [folderId, setFolderId] = useState<number | null>(null);
+  const [folderIds, setFolderIds] = useState<number[]>([]);
   const [pos, setPos] = useState<LatLngLiteral | null>(null);
 
   // traccia gpx (facoltativa)
@@ -110,7 +110,7 @@ export default function TrekCreate() {
         setOk(`GPX collegato a "${updated.title}"`);
       } else {
         // il punto è facoltativo: si potrà aggiungere dopo dallo storico
-        const payload = { title: title.trim(), trekDate, amichetti, notes, lat: pos?.lat ?? null, lon: pos?.lng ?? null, folderId };
+        const payload = { title: title.trim(), trekDate, amichetti, notes, lat: pos?.lat ?? null, lon: pos?.lng ?? null, folderIds };
         const created = rawFile ? await createTrekWithGpx(payload, rawFile, gpxTitle) : await createTrek(payload);
         upsertTrek(created);
         setOk(`Escursione "${created.title}" inserita${rawFile ? " con il suo GPX" : ""}`);
@@ -217,7 +217,7 @@ export default function TrekCreate() {
                   <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
                 </label>
               </div>
-              <FolderSelect value={folderId} onChange={setFolderId} />
+              <FolderSelect value={folderIds} onChange={setFolderIds} />
               <label className="field">
                 <span>Note</span>
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Panorama, fatica, merenda al rifugio..." rows={4} />

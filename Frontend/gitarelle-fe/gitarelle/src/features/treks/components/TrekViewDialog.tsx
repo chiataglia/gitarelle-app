@@ -10,10 +10,12 @@ import Modal from "../../../shared/Modal";
 import TrackLayer from "../../../shared/TrackLayer";
 import FitWhenSized from "../../../shared/FitWhenSized";
 import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
-import { formatDate, formatGain, formatKm } from "../../../shared/format";
-import { CalendarIcon, DistanceIcon, ElevationIcon, ElevationLossIcon, FolderIcon, NotesIcon, PencilIcon, PeopleIcon } from "../../../shared/icons";
-import { computeProfile, slopeColor, trackStats, type ProfilePoint } from "../../../shared/elevation";
+import { formatDate, formatGain, formatKm, formatTrackDuration, trackDurationLabel } from "../../../shared/format";
+import { CalendarIcon, ClockIcon, DistanceIcon, EyeIcon, ElevationIcon, ElevationLossIcon, FolderIcon, NotesIcon, PencilIcon, PeopleIcon, PinIcon, TrashIcon } from "../../../shared/icons";
+import { computeProfile, slopeColor, trackDuration, trackStats, type ProfilePoint } from "../../../shared/elevation";
 import ElevationProfile from "./ElevationProfile";
+import FolderSelect from "./FolderSelect";
+import DurationDialog from "./DurationDialog";
 import styles from "./TrekDialogs.module.css";
 import MapLayers from "../../../shared/MapLayers";
 
@@ -22,10 +24,12 @@ type Props = {
   gpx: ParsedGpx | null; // traccia già scaricata (null se non c'è o è ancora in arrivo)
   color: string;         // stesso colore della traccia sulla mappa del confronto
   onClose: () => void;
+  onEdit: () => void;    // modifica completa (anche punto sulla mappa e cartelle insieme)
+  onDelete: () => void;
 };
 
 // campi modificabili con un click (distanza e dislivello vengono dal gpx)
-type Field = "title" | "trekDate" | "folderId" | "amichetti" | "notes";
+type Field = "title" | "trekDate" | "folderIds" | "amichetti" | "notes";
 
 function PickPoint({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
   useMapEvents({ click: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
@@ -33,9 +37,9 @@ function PickPoint({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
 }
 
 // Scheda di un trek: si legge tutto e si corregge un campo alla volta cliccandoci sopra
-export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
+export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDelete }: Props) {
   const { folders, upsertTrek } = useTreks();
-  const folder = trek.folderId != null ? folders.find((f) => f.id === trek.folderId) : undefined;
+  const folderNames = folders.filter((f) => trek.folderIds.includes(f.id)).map((f) => f.name).join(", ");
   const savedPoint = trek.lat != null && trek.lon != null ? { lat: trek.lat, lng: trek.lon } : null;
 
   const [editing, setEditing] = useState<Field | null>(null);
@@ -53,6 +57,9 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
   const profile = useMemo(() => (gpx ? computeProfile(gpx) : null), [gpx]);
   const [profilePoint, setProfilePoint] = useState<ProfilePoint | null>(null);
   const elevationLoss = gpx ? trackStats(gpx).loss : null;
+  // dal gpx registrato (soste escluse) se ha gli orari, altrimenti stimato
+  const duration = gpx ? trackDuration(gpx) : null;
+  const [showDuration, setShowDuration] = useState(false);
 
   function start(field: Field, value: string) {
     if (saving) return;
@@ -70,14 +77,15 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
       notes: trek.notes ?? "",
       lat: trek.lat,
       lon: trek.lon,
-      folderId: trek.folderId,
+      folderIds: trek.folderIds,
       ...patch,
     };
     try {
       setSaving(true);
       setError(null);
       upsertTrek(await updateTrek(trek.id, payload));
-      setEditing(null);
+      // le cartelle si accendono e spengono una alla volta: l'editor resta aperto finché non si preme "Fatto"
+      if (!patch.folderIds) setEditing(null);
     } catch (err) {
       setError(errorMessage(err, "Errore nel salvataggio"));
     } finally {
@@ -149,29 +157,22 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
     }
   }
 
-  const rows: { field?: Field; label: string; icon: ReactNode; text: string | null; editor?: ReactNode; value?: string }[] = [
+  // onOpen: valore non modificabile ma cliccabile, apre un dettaglio (es. il tempo registrato)
+  const rows: { field?: Field; label: string; icon: ReactNode; text: string | null; editor?: ReactNode; value?: string; onOpen?: () => void }[] = [
     {
       field: "trekDate", label: "Data", icon: <CalendarIcon />,
       text: trek.trekDate ? formatDate(trek.trekDate) : null, value: trek.trekDate ?? "",
       editor: <input type="date" {...editorProps} />,
     },
     {
-      field: "folderId", label: "Cartella", icon: <FolderIcon />,
-      text: folder?.name ?? null, value: trek.folderId != null ? String(trek.folderId) : "",
-      // la cartella si salva appena scelta
+      field: "folderIds", label: "Cartelle", icon: <FolderIcon />,
+      text: folderNames || null, value: "",
+      // ogni cartella si salva appena accesa o spenta (un trek può stare in più cartelle)
       editor: (
-        <select
-          className={styles.inlineInput}
-          value={draft}
-          autoFocus
-          disabled={saving}
-          onChange={(e) => save({ folderId: e.target.value ? Number(e.target.value) : null })}
-          onBlur={() => { if (!saving) setEditing(null); }}
-          onKeyDown={onKeyDown}
-        >
-          <option value="">— nessuna —</option>
-          {folders.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
-        </select>
+        <div className={styles.inlineFolders}>
+          <FolderSelect label={null} value={trek.folderIds} onChange={(folderIds) => save({ folderIds })} disabled={saving} />
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(null)} disabled={saving}>Fatto</button>
+        </div>
       ),
     },
     {
@@ -179,10 +180,17 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
       text: trek.amichetti || null, value: trek.amichetti ?? "",
       editor: <input {...editorProps} placeholder="Chi c'era?" />,
     },
+    // calcolata dal backend dal punto (o dalla partenza del gpx): non si modifica a mano
+    { label: "Regione", icon: <PinIcon />, text: trek.region },
     { label: "Distanza", icon: <DistanceIcon />, text: trek.distanceMeters != null ? formatKm(trek.distanceMeters) : null },
     { label: "Dislivello positivo", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? `+${formatGain(trek.elevationGainMeters)}` : null },
     // il negativo non è salvato nel backend: si calcola dal gpx già scaricato
     { label: "Dislivello negativo", icon: <ElevationLossIcon />, text: elevationLoss != null ? `−${formatGain(elevationLoss)}` : null },
+    {
+      label: duration ? trackDurationLabel(duration) : "Tempo di percorrenza", icon: <ClockIcon />, text: duration ? formatTrackDuration(duration) : null,
+      // con gli orari del gps si apre il dettaglio: partenza, arrivo, soste e confronto con la stima
+      onOpen: duration?.recorded ? () => setShowDuration(true) : undefined,
+    },
   ];
 
   const heading = editing === "title" ? (
@@ -195,7 +203,23 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
   );
 
   return (
-    <Modal title={trek.title} heading={heading} onClose={onClose} wide>
+    <Modal
+      title={trek.title}
+      heading={heading}
+      onClose={onClose}
+      wide
+      // modifica completa ed eliminazione: icone accanto alla ✕, si aprono sopra la scheda
+      actions={
+        <>
+          <button type="button" className="modal-icon-btn" onClick={onEdit} disabled={saving} title="Modifica" aria-label="Modifica escursione">
+            <PencilIcon size={15} />
+          </button>
+          <button type="button" className="modal-icon-btn is-danger" onClick={onDelete} disabled={saving} title="Elimina" aria-label="Elimina escursione">
+            <TrashIcon size={15} />
+          </button>
+        </>
+      }
+    >
       <div className={styles.editLayout}>
         <div className={styles.fields}>
           <dl className={styles.facts}>
@@ -207,7 +231,14 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
                     ? r.editor
                     : r.field
                       ? editable(r.field, r.text, r.value ?? "", r.label)
-                      : <span className={r.text ? styles.readOnly : styles.factEmpty}>{r.text ?? "—"}</span>}
+                      : r.onOpen
+                        ? (
+                          <button type="button" className={styles.factValue} onClick={r.onOpen} aria-label={`${r.label}: dettagli`}>
+                            <span>{r.text}</span>
+                            <EyeIcon size={12} />
+                          </button>
+                        )
+                        : <span className={r.text ? styles.readOnly : styles.factEmpty}>{r.text ?? "—"}</span>}
                 </dd>
               </div>
             ))}
@@ -276,6 +307,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose }: Props) {
           </div>
         )}
       </div>
+      {showDuration && gpx && <DurationDialog gpx={gpx} onClose={() => setShowDuration(false)} />}
     </Modal>
   );
 }

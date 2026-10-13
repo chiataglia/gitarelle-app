@@ -45,7 +45,8 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
     return sort.desc ? -cmp : cmp;
   });
 
-  const folderName = (id: Trek["folderId"]) => folders.find((f) => f.id === id)?.name;
+  // nomi delle cartelle del trek, nello stesso ordine (alfabetico) della barra delle cartelle
+  const folderNames = (t: Trek) => folders.filter((f) => t.folderIds.includes(f.id)).map((f) => f.name).join(", ") || null;
 
   // click sulla stessa colonna inverte il verso; su una nuova parte dal verso più utile
   function sortBy(key: SortKey) {
@@ -86,7 +87,8 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
               <tr>
                 {header("date", "Data")}
                 {header("title", "Escursione")}
-                <th className={styles.colFolder}>Cartella</th>
+                <th className={styles.colFolder}>Cartelle</th>
+                <th className={styles.colFolder}>Regione</th>
                 {header("distance", "Distanza", styles.num)}
                 {header("gain", "Dislivello", styles.num)}
                 <th className={styles.colActions}><span className="sr-only">Azioni</span></th>
@@ -104,7 +106,8 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
                     </button>
                     {t.amichetti && <small>con {t.amichetti}</small>}
                   </td>
-                  <td className={styles.colFolder}>{folderName(t.folderId) ?? <span className={styles.muted}>—</span>}</td>
+                  <td className={styles.colFolder}>{folderNames(t) ?? <span className={styles.muted}>—</span>}</td>
+                  <td className={styles.colFolder}>{t.region ?? <span className={styles.muted}>—</span>}</td>
                   <td className={styles.num}>{t.distanceMeters != null ? formatKm(t.distanceMeters) : <span className={styles.muted}>—</span>}</td>
                   <td className={styles.num}>{t.elevationGainMeters != null ? formatGain(t.elevationGainMeters) : <span className={styles.muted}>—</span>}</td>
                   <td className={styles.colActions}>

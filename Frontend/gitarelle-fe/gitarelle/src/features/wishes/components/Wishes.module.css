@@ -2,7 +2,7 @@
    (--fresh) come accento al posto dell'ambra, per distinguerla dallo storico.
    Le variabili valgono solo dentro la sezione e i suoi dialog. */
 .board,
-.formLayout,
+.planLayout,
 .viewLayout,
 .confirmBody {
   --wish: var(--fresh);
@@ -350,34 +350,6 @@
 }
 
 /* ---------- dialog: form ---------- */
-.formLayout {
-  display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: 16px;
-}
-
-.formFields {
-  display: grid;
-  gap: 14px;
-  align-content: start;
-}
-
-.formRow {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 12px;
-}
-
-.formMapCol {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 10px;
-}
-
-.formMap {
-  min-height: var(--map-h-dialog);
-}
-
 .full {
   grid-column: 1 / -1;
 }
@@ -389,100 +361,268 @@
   gap: 8px;
 }
 
-.gpxDrop {
-  display: block;
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--wish-border);
-  color: var(--wish);
+/* ---------- dialog: nuova idea / modifica (mappa di disegno + pannello) ---------- */
+.planLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+}
+
+/* colonna sinistra: la mappa è alta quanto basta perché mappa + profilo riempiano lo schermo
+   (e si allunga se il pannello a destra è più alto); il profilo sta sempre subito sotto */
+.planMain {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.planMap {
+  flex: 1 1 auto;
+  min-height: clamp(300px, calc(100dvh - 560px), 600px);
+}
+
+/* ricerca luoghi sopra la mappa, accanto ai pulsanti dello zoom */
+.mapSearch {
+  position: absolute;
+  z-index: 1000;
+  top: 10px;
+  left: 56px;
+  width: min(300px, calc(100% - 112px));
+}
+
+.mapSearch .placeRow input,
+.mapSearch .placeBtn {
+  background: rgba(12, 36, 26, 0.92);
+  backdrop-filter: blur(4px);
+  box-shadow: var(--shadow);
+}
+
+/* in basso: in alto c'è già la ricerca. Selettore più specifico di .mapHint (RoutePlanner.module.css),
+   che si carica dopo: a pari peso il suo "top" resterebbe e il suggerimento si allungherebbe su tutta la mappa */
+.planMap .planHint {
+  top: auto;
+  bottom: 28px;
+}
+
+.planSide {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* campi compatti: etichette piccole, meno padding */
+.compactField {
+  gap: 4px;
+}
+
+.compactField > span {
+  font-size: 12px;
+}
+
+.compactField input,
+.compactField textarea {
+  padding: 7px 10px;
   font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
 }
 
-.gpxDrop small {
-  color: var(--muted);
-  font-weight: 400;
+/* percorso: riquadro a parte, staccato dai campi */
+.routeBox {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--wish-border);
 }
 
-.gpxDrop:hover {
-  border-color: var(--wish);
-}
-
-.gpxChip {
+/* una riga di icone: GPX, verso delle nuove tappe, annulla, ricomincia, info */
+.routeBar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--wish-border);
-  background: rgba(127, 216, 160, 0.08);
-  font-size: 14px;
+  gap: 6px;
+  min-width: 0;
 }
 
-.gpxName {
+.routeSpacer {
+  flex: 1;
+}
+
+.routeFile {
   flex: 1;
   min-width: 0;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.gpxLink {
-  font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--wish);
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-}
-
-.gpxLink:hover {
-  text-decoration: underline;
-}
-
-.coords {
-  position: absolute;
-  z-index: 500;
-  left: 12px;
-  bottom: 12px;
+.gpxPill {
   display: inline-flex;
-  gap: 8px;
   align-items: center;
-  padding: 8px 14px;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
   border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
-  background: rgba(12, 36, 26, 0.88);
-  border: 1px solid var(--wish-border);
-  pointer-events: none;
-}
-
-.coordsSet {
-  font-variant-numeric: tabular-nums;
-  border-color: var(--wish);
-  padding-right: 6px;
-  pointer-events: auto;
-}
-
-.coordsClear {
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
   font: inherit;
-  font-size: 11px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--wish);
+  background: transparent;
+  border: 1px dashed var(--wish-border);
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
 }
 
-.coordsClear:hover {
-  background: var(--danger);
-  color: var(--accent-ink);
+.gpxPill:hover {
+  border-color: var(--wish);
+  background: rgba(127, 216, 160, 0.08);
+}
+
+/* dove vanno le nuove tappe: due pulsanti a tutta larghezza */
+.addAt {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  gap: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.addAt button {
+  padding: 6px 8px;
+  border: none;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.addAt button:hover {
+  color: var(--text);
+}
+
+.addAt button[aria-checked="true"] {
+  color: var(--wish-ink);
+  background: var(--wish);
+}
+
+/* ritorno per lo stesso percorso / termina alla partenza: uno per riga, le etichette restano intere */
+.routeExtras {
+  display: grid;
+  gap: 6px;
+}
+
+.routeExtras button {
+  padding: 6px 8px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.routeExtras button:hover:not(:disabled) {
+  color: var(--wish);
+  border-color: var(--wish);
+  background: rgba(127, 216, 160, 0.08);
+}
+
+.routeExtras button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.iconOn {
+  color: var(--wish);
+  background: rgba(127, 216, 160, 0.14);
+}
+
+.routeHelp {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.routeHelp p {
+  margin: 0;
+}
+
+.routeHelp b {
+  color: var(--text);
+}
+
+.routeCredit {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+/* misure con icone: distanza, salita, tempo */
+.routeStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.routeStats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.routeStats svg {
+  color: var(--wish);
+}
+
+.routeStatus {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.routeError {
+  color: var(--danger);
+}
+
+.planProfile {
+  min-width: 0;
+}
+
+.planProfileEmpty {
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-strong);
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.footerHint {
+  margin-right: auto;
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 /* ---------- ricerca luogo ---------- */
@@ -511,11 +651,15 @@
   border-color: var(--wish);
 }
 
+/* solo l'icona della lente: quadrato alto quanto il campo */
 .placeBtn {
   flex: none;
+  width: 42px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   font: inherit;
   font-weight: 700;
-  padding: 0 16px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--wish);
   color: var(--wish);
@@ -611,7 +755,7 @@
 }
 
 @media (max-width: 768px) {
-  .formLayout {
+  .planLayout {
     grid-template-columns: 1fr;
   }
   .head {
@@ -630,9 +774,6 @@
 }
 
 @media (max-width: 480px) {
-  .formRow {
-    grid-template-columns: 1fr;
-  }
   .mapHint {
     white-space: normal;
     text-align: center;

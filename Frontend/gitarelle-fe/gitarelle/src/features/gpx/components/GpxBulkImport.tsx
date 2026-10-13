@@ -21,7 +21,7 @@ export default function GpxBulkImport({ items: initial, onClose }: Props) {
   const { upsertTrek } = useTreks();
   const [items, setItems] = useState(initial);
   const [amichetti, setAmichetti] = useState("");
-  const [folderId, setFolderId] = useState<number | null>(null);
+  const [folderIds, setFolderIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
 
   const update = (key: string, patch: Partial<BulkItem>) =>
@@ -51,7 +51,7 @@ export default function GpxBulkImport({ items: initial, onClose }: Props) {
       try {
         const start = it.gpx?.info.start;
         const created = await createTrekWithGpx(
-          { title: it.title.trim(), trekDate: it.trekDate || null, amichetti, notes: "", lat: start?.lat ?? null, lon: start?.lng ?? null, folderId },
+          { title: it.title.trim(), trekDate: it.trekDate || null, amichetti, notes: "", lat: start?.lat ?? null, lon: start?.lng ?? null, folderIds },
           it.file,
         );
         upsertTrek(created);
@@ -80,7 +80,7 @@ export default function GpxBulkImport({ items: initial, onClose }: Props) {
             <span>Amichetti (per tutti)</span>
             <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
           </label>
-          <FolderSelect value={folderId} onChange={setFolderId} />
+          <FolderSelect value={folderIds} onChange={setFolderIds} />
         </div>
 
         <div className={styles.bulkList}>

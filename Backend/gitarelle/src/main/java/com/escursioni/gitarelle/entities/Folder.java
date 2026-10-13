@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 
 import java.time.Instant;
 
-// Cartella per raggruppare i trek (es. per regione): un trek sta al massimo in una cartella.
+// Cartella per raggruppare i trek (es. per regione): un trek può stare in più cartelle.
 // Ogni utente ha le sue cartelle
 @Entity
 @Table(name = "folder")

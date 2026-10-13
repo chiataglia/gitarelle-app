@@ -9,10 +9,12 @@ const isLine = (feature?: GeoJSON.Feature) => {
   return t === "LineString" || t === "MultiLineString";
 };
 
-// ricentra solo quando cambia la traccia (non ad ogni render)
+// ricentra solo quando cambia la traccia (non ad ogni render). Prima fa rileggere la misura a leaflet:
+// in un dialog la mappa nasce a 0 pixel e, con quella misura, inquadrerebbe allo zoom massimo
 function FitBounds({ bounds }: { bounds: L.LatLngBounds }) {
   const map = useMap();
   useEffect(() => {
+    map.invalidateSize();
     map.fitBounds(bounds, { padding: [24, 24] });
   }, [map, bounds]);
   return null;

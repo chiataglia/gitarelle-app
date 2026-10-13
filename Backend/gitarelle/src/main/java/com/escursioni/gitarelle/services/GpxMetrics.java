@@ -7,7 +7,8 @@ import javax.xml.stream.XMLStreamReader;
 import java.io.ByteArrayInputStream;
 
 // Distanza e dislivello positivo di una traccia gpx (valori indicativi, come quelli delle app di trekking)
-public record GpxMetrics(double distanceMeters, double elevationGainMeters) {
+// e punto di partenza (null se la traccia non ha punti)
+public record GpxMetrics(double distanceMeters, double elevationGainMeters, Double startLat, Double startLon) {
 
     private static final double EARTH_RADIUS_M = 6_371_000;
     // sotto questa variazione di quota si considera rumore del gps: evita di gonfiare il dislivello
@@ -18,7 +19,7 @@ public record GpxMetrics(double distanceMeters, double elevationGainMeters) {
         try {
             return compute(gpx);
         } catch (XMLStreamException | RuntimeException e) {
-            return new GpxMetrics(0, 0);
+            return new GpxMetrics(0, 0, null, null);
         }
     }
 
@@ -34,6 +35,7 @@ public record GpxMetrics(double distanceMeters, double elevationGainMeters) {
         Double prevLat = null, prevLon = null;  // punto precedente nello stesso segmento
         Double refEle = null;                    // quota di riferimento per il dislivello
         Double lat = null, lon = null;
+        Double startLat = null, startLon = null; // primo punto della traccia
         boolean inEle = false;
         StringBuilder eleText = new StringBuilder();
 
@@ -68,6 +70,7 @@ public record GpxMetrics(double distanceMeters, double elevationGainMeters) {
                         }
                     } else if ((name.equals("trkpt") || name.equals("rtept")) && lat != null && lon != null) {
                         if (prevLat != null) distance += haversine(prevLat, prevLon, lat, lon);
+                        if (startLat == null) { startLat = lat; startLon = lon; }
                         prevLat = lat;
                         prevLon = lon;
                         lat = null;
@@ -78,7 +81,7 @@ public record GpxMetrics(double distanceMeters, double elevationGainMeters) {
         } finally {
             xml.close();
         }
-        return new GpxMetrics(distance, gain);
+        return new GpxMetrics(distance, gain, startLat, startLon);
     }
 
     private static Double parse(String s) {

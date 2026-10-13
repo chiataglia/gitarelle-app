@@ -60,6 +60,25 @@
   stroke-dasharray: 3 3;
 }
 
+/* tappe di un percorso disegnato (come i pin numerati della mappa) */
+.marker {
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.markerLabel {
+  font-size: 10px;
+  font-weight: 800;
+  fill: var(--bg);
+}
+
+.markerGuide {
+  stroke: var(--text);
+  stroke-opacity: 0.35;
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
 .dot {
   stroke: var(--chart-bg);
   stroke-width: 2;

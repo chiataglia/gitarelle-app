@@ -1,6 +1,7 @@
 package com.escursioni.gitarelle.controllers;
 
 import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
+import com.escursioni.gitarelle.dto.TrekIdsRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.dto.UpdateTrekLocationRequestDto;
 import com.escursioni.gitarelle.services.TrekService;
@@ -46,6 +47,13 @@ public class TrekController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         this.trekService.deleteTrek(id);
+    }
+
+    // Elimina più trek in una volta (scelti nello storico), con i loro gpx: tutti o nessuno
+    @PostMapping("/delete")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMany(@Valid @RequestBody TrekIdsRequestDto requestDto) {
+        this.trekService.deleteTreks(requestDto.trekIds());
     }
 
     // Aggiunge o sposta il punto sulla mappa di un trek esistente

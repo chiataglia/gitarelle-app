@@ -14,8 +14,11 @@ import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -26,12 +29,15 @@ public class TrekService {
     private final TrekRepository trekRepository;
     private final TrekGpxRepository trekGpxRepository;
     private final FolderService folderService;
+    private final RegionLocator regionLocator;
     private final CurrentUser currentUser;
 
-    public TrekService(TrekRepository trekRepository, TrekGpxRepository trekGpxRepository, FolderService folderService, CurrentUser currentUser){
+    public TrekService(TrekRepository trekRepository, TrekGpxRepository trekGpxRepository, FolderService folderService,
+                       RegionLocator regionLocator, CurrentUser currentUser){
         this.trekRepository = trekRepository;
         this.trekGpxRepository = trekGpxRepository;
         this.folderService = folderService;
+        this.regionLocator = regionLocator;
         this.currentUser = currentUser;
     }
 
@@ -39,6 +45,7 @@ public class TrekService {
     public List<TrekResponseDto> findAllTreks(){
         Long userId = this.currentUser.id();
         backfillGpxMetrics(userId);
+        backfillRegions(userId);
         Map<Long, TrekGpxMetricsRow> metrics = this.trekGpxRepository.findMetricsByOwnerId(userId).stream()
                 .collect(Collectors.toMap(TrekGpxMetricsRow::trekId, Function.identity()));
         return this.trekRepository.findAllByOwnerId(userId).stream()
@@ -54,6 +61,26 @@ public class TrekService {
             gpx.setDistanceMeters(m.distanceMeters());
             gpx.setElevationGainMeters(m.elevationGainMeters());
         }
+    }
+
+    // trek creati prima del calcolo della regione: si calcola una volta qui (dentro una transazione, come sopra).
+    // Un gpx senza punti leggibili lascia la regione vuota e si riprova alla volta successiva: caso raro
+    public void backfillRegions(Long userId) {
+        for (Trek trek : this.trekRepository.findWithoutRegionByOwnerId(userId)) {
+            refreshRegion(trek);
+        }
+    }
+
+    // regione dal punto del trek o, se manca, dalla partenza del suo gpx (il file si legge solo in quel caso)
+    public void refreshRegion(Trek trek) {
+        if (trek.getLat() != null && trek.getLon() != null) {
+            trek.setRegion(this.regionLocator.regionOf(trek.getLat(), trek.getLon()));
+            return;
+        }
+        GpxMetrics gpx = trek.getId() == null ? null : this.trekGpxRepository.findById(trek.getId())
+                .map(g -> GpxMetrics.computeOrZero(g.getData()))
+                .orElse(null);
+        trek.setRegion(gpx != null ? this.regionLocator.regionOf(gpx.startLat(), gpx.startLon()) : null);
     }
 
     public TrekResponseDto getTrek(Long id) {
@@ -98,7 +125,21 @@ public class TrekService {
         trek.setAmichetti(requestDto.amichetti());
         trek.setLat(requestDto.lat());
         trek.setLon(requestDto.lon());
-        trek.setFolder(requestDto.folderId() != null ? this.folderService.findFolderById(requestDto.folderId()) : null);
+        trek.setFolders(this.folderService.findFoldersByIds(requestDto.folderIds()));
+        refreshRegion(trek);
+    }
+
+    // Elimina più trek insieme ai loro gpx: tutti o nessuno (se uno non è dell'utente non si tocca nulla)
+    @Transactional
+    public void deleteTreks(Collection<Long> ids) {
+        Set<Long> unique = new HashSet<>(ids);
+        List<Trek> treks = this.trekRepository.findAllByIdInAndOwnerId(unique, this.currentUser.id());
+        if (treks.size() < unique.size()) {
+            Set<Long> found = treks.stream().map(Trek::getId).collect(Collectors.toSet());
+            throw new TrekNotFoundException(unique.stream().filter(id -> !found.contains(id)).findFirst().orElseThrow());
+        }
+        this.trekGpxRepository.deleteAllById(this.trekGpxRepository.findAllById(unique).stream().map(TrekGpx::getTrekId).toList());
+        this.trekRepository.deleteAll(treks);
     }
 
     @Transactional
@@ -106,6 +147,7 @@ public class TrekService {
         Trek trek = findTrekById(id);
         trek.setLat(requestDto.lat());
         trek.setLon(requestDto.lon());
+        refreshRegion(trek);
         return toResponse(this.trekRepository.save(trek));
     }
 

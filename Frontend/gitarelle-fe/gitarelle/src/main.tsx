@@ -1,7 +1,9 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+// prima lo stile di Leaflet, poi il nostro: le personalizzazioni di zoom, etichette e crediti in index.css
+// devono venire dopo per vincere
 import "leaflet/dist/leaflet.css";
+import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import { TreksProvider } from './features/treks/TreksContext'

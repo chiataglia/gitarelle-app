@@ -46,24 +46,16 @@
   font-size: 22px;
 }
 
-.close {
+.headerActions {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  font: inherit;
-  font-size: 13px;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.06);
-  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.close:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.14);
+/* l'aspetto dei pulsanti a icona è .modal-icon-btn in index.css (lo usano anche le azioni passate da fuori) */
+.close {
+  font-size: 13px;
 }
 
 @keyframes modalIn {

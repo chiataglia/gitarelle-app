@@ -186,6 +186,13 @@
   outline: none;
 }
 
+/* scelta delle cartelle nella scheda: chip + "Fatto" */
+.inlineFolders {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
 textarea.inlineInput {
   margin: 0;
   resize: vertical;
@@ -251,6 +258,14 @@ textarea.inlineInput {
 
 .deleteTrek small {
   color: var(--muted);
+}
+
+.deleteList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
 }
 
 @media (max-width: 768px) {

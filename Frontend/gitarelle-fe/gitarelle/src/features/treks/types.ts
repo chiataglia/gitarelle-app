@@ -6,7 +6,9 @@ export type Trek = {
   notes?: string;
   lat: number | null; // un trek può non avere ancora un punto sulla mappa
   lon: number | null;
-  folderId: Folder["id"] | null; // un trek può non stare in nessuna cartella
+  region: string | null; // regione italiana o "Estero", calcolata dal backend; null senza punto né gpx
+  folderIds: Folder["id"][]; // cartelle in cui sta il trek: nessuna, una o più
+  createdAt: string; // quando è stato aggiunto al diario (ISO)
   hasGpx: boolean;
   distanceMeters: number | null;      // dal gpx (null se non c'è)
   elevationGainMeters: number | null; // dislivello positivo, dal gpx
@@ -20,10 +22,10 @@ export type TrekPayload = {
   notes: string;
   lat: number | null;
   lon: number | null;
-  folderId: Folder["id"] | null;
+  folderIds: Folder["id"][];
 };
 
-// Cartella per raggruppare i trek (es. per regione)
+// Cartella per raggruppare i trek a piacere (es. Weekend, Dolomiti); la regione invece la calcola il backend
 export type Folder = {
   id: number;
   name: string;
@@ -31,3 +33,6 @@ export type Folder = {
 
 // Filtro dello storico: tutte, solo quelle senza cartella, o una cartella precisa
 export type FolderFilter = "all" | "none" | Folder["id"];
+
+// regione dei trek fuori dall'Italia (stesso valore di RegionLocator.ABROAD nel backend)
+export const ABROAD = "Estero";
