@@ -11,11 +11,15 @@ import TrackLayer from "../../../shared/TrackLayer";
 import FitWhenSized from "../../../shared/FitWhenSized";
 import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import { formatDate, formatGain, formatKm, formatTrackDuration, trackDurationLabel } from "../../../shared/format";
-import { CalendarIcon, ClockIcon, DistanceIcon, EyeIcon, ElevationIcon, ElevationLossIcon, FolderIcon, NotesIcon, PencilIcon, PeopleIcon, PinIcon, TrashIcon } from "../../../shared/icons";
+import { AlertIcon, CalendarIcon, ClockIcon, DistanceIcon, EyeIcon, ElevationIcon, ElevationLossIcon, FolderIcon, PencilIcon, PeopleIcon, PinIcon, StarIcon, TrashIcon } from "../../../shared/icons";
 import { computeProfile, slopeColor, trackDuration, trackStats, type ProfilePoint } from "../../../shared/elevation";
 import ElevationProfile from "./ElevationProfile";
 import FolderSelect from "./FolderSelect";
 import DurationDialog from "./DurationDialog";
+import ReviewDialog from "./ReviewDialog";
+import StarRating from "./StarRating";
+import { SCALE_MAX, effortLabel, formatRating, hasReview, sceneryLabel } from "../review";
+import reviewStyles from "./Review.module.css";
 import styles from "./TrekDialogs.module.css";
 import MapLayers from "../../../shared/MapLayers";
 
@@ -28,8 +32,8 @@ type Props = {
   onDelete: () => void;
 };
 
-// campi modificabili con un click (distanza e dislivello vengono dal gpx)
-type Field = "title" | "trekDate" | "folderIds" | "amichetti" | "notes";
+// campi modificabili con un click (distanza e dislivello vengono dal gpx; le note si scrivono nella valutazione)
+type Field = "title" | "trekDate" | "folderIds" | "amichetti";
 
 function PickPoint({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
   useMapEvents({ click: (e) => onPick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
@@ -60,6 +64,8 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
   // dal gpx registrato (soste escluse) se ha gli orari, altrimenti stimato
   const duration = gpx ? trackDuration(gpx) : null;
   const [showDuration, setShowDuration] = useState(false);
+  const [showReview, setShowReview] = useState(false);
+  const reviewed = hasReview(trek);
 
   function start(field: Field, value: string) {
     if (saving) return;
@@ -107,19 +113,19 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     } else if (editing === "trekDate") {
       if (draft !== (trek.trekDate ?? "")) save({ trekDate: draft || null });
       else setEditing(null);
-    } else if (editing === "amichetti" || editing === "notes") {
-      if (draft !== (trek[editing] ?? "")) save({ [editing]: draft });
+    } else if (editing === "amichetti") {
+      if (draft !== (trek.amichetti ?? "")) save({ amichetti: draft });
       else setEditing(null);
     }
   }
 
-  // tasti comuni agli editor: Invio salva (nelle note Ctrl+Invio), Esc annulla senza chiudere la scheda
-  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+  // tasti comuni agli editor: Invio salva, Esc annulla senza chiudere la scheda
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Escape") {
       e.preventDefault(); // altrimenti il dialog si chiude
       skipCommit.current = true;
       e.currentTarget.blur();
-    } else if (e.key === "Enter" && (e.currentTarget.tagName !== "TEXTAREA" || e.ctrlKey || e.metaKey)) {
+    } else if (e.key === "Enter") {
       e.preventDefault();
       e.currentTarget.blur();
     }
@@ -129,7 +135,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     value: draft,
     autoFocus: true,
     disabled: saving,
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setDraft(e.target.value),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setDraft(e.target.value),
     onBlur: commit,
     onKeyDown,
     className: styles.inlineInput,
@@ -157,8 +163,8 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     }
   }
 
-  // onOpen: valore non modificabile ma cliccabile, apre un dettaglio (es. il tempo registrato)
-  const rows: { field?: Field; label: string; icon: ReactNode; text: string | null; editor?: ReactNode; value?: string; onOpen?: () => void }[] = [
+  // content: valore in sola lettura con un aspetto proprio (dislivelli affiancati, tempo con il dettaglio)
+  const rows: { field?: Field; label: string; icon: ReactNode; text: string | null; editor?: ReactNode; value?: string; content?: ReactNode }[] = [
     {
       field: "trekDate", label: "Data", icon: <CalendarIcon />,
       text: trek.trekDate ? formatDate(trek.trekDate) : null, value: trek.trekDate ?? "",
@@ -183,13 +189,25 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     // calcolata dal backend dal punto (o dalla partenza del gpx): non si modifica a mano
     { label: "Regione", icon: <PinIcon />, text: trek.region },
     { label: "Distanza", icon: <DistanceIcon />, text: trek.distanceMeters != null ? formatKm(trek.distanceMeters) : null },
-    { label: "Dislivello positivo", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? `+${formatGain(trek.elevationGainMeters)}` : null },
-    // il negativo non è salvato nel backend: si calcola dal gpx già scaricato
-    { label: "Dislivello negativo", icon: <ElevationLossIcon />, text: elevationLoss != null ? `−${formatGain(elevationLoss)}` : null },
+    // positivo e negativo affiancati, il verso lo dice l'icona (il negativo non è salvato nel backend: si calcola dal gpx già scaricato)
+    {
+      label: "Dislivello positivo e negativo", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? formatGain(trek.elevationGainMeters) : null,
+      content: trek.elevationGainMeters != null && (
+        <span className={styles.pair}>
+          <span>{formatGain(trek.elevationGainMeters)}</span>
+          {elevationLoss != null && <span title="Dislivello negativo"><ElevationLossIcon />{formatGain(elevationLoss)}</span>}
+        </span>
+      ),
+    },
     {
       label: duration ? trackDurationLabel(duration) : "Tempo di percorrenza", icon: <ClockIcon />, text: duration ? formatTrackDuration(duration) : null,
-      // con gli orari del gps si apre il dettaglio: partenza, arrivo, soste e confronto con la stima
-      onOpen: duration?.recorded ? () => setShowDuration(true) : undefined,
+      // con gli orari del gps si apre il dettaglio (partenza, arrivo, soste e confronto con la stima): è cliccabile solo il tempo
+      content: duration?.recorded && (
+        <button type="button" className={styles.detailLink} onClick={() => setShowDuration(true)} aria-label={`${formatTrackDuration(duration)}: vedi il dettaglio`}>
+          {formatTrackDuration(duration)}
+          <EyeIcon size={14} />
+        </button>
+      ),
     },
   ];
 
@@ -231,30 +249,51 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
                     ? r.editor
                     : r.field
                       ? editable(r.field, r.text, r.value ?? "", r.label)
-                      : r.onOpen
-                        ? (
-                          <button type="button" className={styles.factValue} onClick={r.onOpen} aria-label={`${r.label}: dettagli`}>
-                            <span>{r.text}</span>
-                            <EyeIcon size={12} />
-                          </button>
-                        )
+                      : r.content
+                        ? r.content
                         : <span className={r.text ? styles.readOnly : styles.factEmpty}>{r.text ?? "—"}</span>}
                 </dd>
               </div>
             ))}
           </dl>
-          <div className={styles.notes} title="Note">
-            <NotesIcon />
-            <span className="sr-only">Note</span>
-            {editing === "notes" ? (
-              <textarea {...editorProps} rows={6} placeholder="Panorama, fatica, merenda al rifugio... (Ctrl+Invio per salvare)" />
+          {/* valutazione: si compila in un dialog a parte, qui solo il riepilogo. Una volta data resta solo
+              la valutazione con la matita per modificarla; prima, titolo e pulsante "Valuta" */}
+          <section className={`${reviewStyles.summary} ${reviewed ? reviewStyles.summaryDone : ""}`} aria-label="Valutazione">
+            {reviewed ? (
+              <>
+                <button type="button" className={reviewStyles.editPen} onClick={() => setShowReview(true)} disabled={saving} title="Modifica valutazione" aria-label="Modifica valutazione">
+                  <PencilIcon size={14} />
+                </button>
+                {trek.rating != null && (
+                  <div className={reviewStyles.ratingLine}>
+                    <StarRating value={trek.rating} size={18} />
+                    {formatRating(trek.rating)}
+                  </div>
+                )}
+                {(trek.effort != null || trek.scenery != null || trek.dangerous === true) && (
+                  <div className={reviewStyles.tags}>
+                    {trek.effort != null && <span className={reviewStyles.tag}>Fatica <b>{trek.effort}/{SCALE_MAX}</b> {effortLabel(trek.effort)}</span>}
+                    {trek.scenery != null && <span className={reviewStyles.tag}>Paesaggio <b>{trek.scenery}/{SCALE_MAX}</b> {sceneryLabel(trek.scenery)}</span>}
+                    {trek.dangerous === true && <span className={`${reviewStyles.tag} ${reviewStyles.tagDanger}`}><AlertIcon size={13} />Tratti pericolosi</span>}
+                  </div>
+                )}
+                {trek.tags?.length > 0 && (
+                  <div className={reviewStyles.tags} aria-label="Etichette">
+                    {trek.tags.map((tag) => <span key={tag} className={reviewStyles.label}>{tag}</span>)}
+                  </div>
+                )}
+                {trek.notes?.trim() && <p className={reviewStyles.reviewText}>{trek.notes}</p>}
+              </>
             ) : (
-              <button type="button" className={`${styles.factValue} ${styles.notesValue}`} onClick={() => start("notes", trek.notes ?? "")} aria-label="Modifica note">
-                <span className={trek.notes ? undefined : styles.factEmpty}>{trek.notes || "Aggiungi una nota…"}</span>
-                <PencilIcon size={12} />
-              </button>
+              <>
+                <div className={reviewStyles.summaryHead}>
+                  <span className={reviewStyles.summaryTitle}><StarIcon size={18} fill="empty" />Valutazione</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowReview(true)} disabled={saving}>Valuta</button>
+                </div>
+                <p className={reviewStyles.summaryEmpty}>Com'è andata? Dai un voto, racconta l'uscita, segna fatica e paesaggio e scegli le etichette.</p>
+              </>
             )}
-          </div>
+          </section>
           {saving && <p className={styles.hint}>Salvataggio…</p>}
           {error && <div className="alert alert-error">{error}</div>}
         </div>
@@ -308,6 +347,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
         )}
       </div>
       {showDuration && gpx && <DurationDialog gpx={gpx} onClose={() => setShowDuration(false)} />}
+      {showReview && <ReviewDialog trek={trek} onClose={() => setShowReview(false)} />}
     </Modal>
   );
 }

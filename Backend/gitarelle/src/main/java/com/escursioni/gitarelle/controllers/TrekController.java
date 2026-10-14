@@ -3,6 +3,7 @@ package com.escursioni.gitarelle.controllers;
 import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
 import com.escursioni.gitarelle.dto.TrekIdsRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
+import com.escursioni.gitarelle.dto.TrekReviewRequestDto;
 import com.escursioni.gitarelle.dto.UpdateTrekLocationRequestDto;
 import com.escursioni.gitarelle.services.TrekService;
 import jakarta.validation.Valid;
@@ -60,6 +61,12 @@ public class TrekController {
     @PutMapping("/{id}/location")
     public TrekResponseDto updateLocation(@PathVariable Long id, @Valid @RequestBody UpdateTrekLocationRequestDto requestDto) {
         return this.trekService.updateLocation(id, requestDto);
+    }
+
+    // Valuta il trek: stelle, fatica, paesaggio, tratti pericolosi e recensione
+    @PutMapping("/{id}/review")
+    public TrekResponseDto updateReview(@PathVariable Long id, @Valid @RequestBody TrekReviewRequestDto requestDto) {
+        return this.trekService.updateReview(id, requestDto);
     }
 
 }

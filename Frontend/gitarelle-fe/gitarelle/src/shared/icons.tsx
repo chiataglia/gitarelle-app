@@ -117,6 +117,28 @@ export function EyeIcon({ size = 16 }: IconProps) {
   );
 }
 
+// stella della valutazione: piena, mezza (metà sinistra piena) o vuota
+export function StarIcon({ size = 16, fill = "full" }: IconProps & { fill?: "full" | "half" | "empty" }) {
+  const d = "M12 2.8l2.85 5.78 6.38.93-4.62 4.5 1.09 6.35L12 17.36 6.3 20.36l1.09-6.35-4.62-4.5 6.38-.93Z";
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" aria-hidden="true">
+      {fill === "full" && <path d={d} fill="currentColor" />}
+      {fill === "half" && <path d={d} fill="currentColor" stroke="none" style={{ clipPath: "inset(0 50% 0 0)" }} />}
+      <path d={d} />
+    </svg>
+  );
+}
+
+// tratti pericolosi: triangolo di attenzione
+export function AlertIcon({ size = 16 }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M10.3 3.9 2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v4M12 17h.01" />
+    </svg>
+  );
+}
+
 // segnaposto (idea con solo il punto)
 export function PinIcon({ size = 16 }: IconProps) {
   return (

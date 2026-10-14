@@ -1,5 +1,5 @@
 import { apiFetch, apiJson } from "../../shared/api";
-import type { Folder, Trek, TrekPayload } from "./types";
+import type { Folder, Trek, TrekPayload, TrekReview } from "./types";
 
 const json = (body: unknown): RequestInit => ({
   method: "POST",
@@ -41,6 +41,10 @@ export const deleteTreks = (trekIds: Trek["id"][]) =>
 
 export const updateTrekLocation = (trekId: Trek["id"], lat: number, lon: number) =>
   apiJson<Trek>(`/treks/${trekId}/location`, { ...json({ lat, lon }), method: "PUT" });
+
+// valutazione: stelle, fatica, paesaggio, tratti pericolosi e recensione (le note)
+export const updateTrekReview = (trekId: Trek["id"], review: TrekReview) =>
+  apiJson<Trek>(`/treks/${trekId}/review`, { ...json(review), method: "PUT" });
 
 export function uploadGpx(trekId: Trek["id"], file: File, title?: string) {
   const formData = new FormData();

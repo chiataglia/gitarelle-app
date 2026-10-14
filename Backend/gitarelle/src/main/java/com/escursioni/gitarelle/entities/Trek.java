@@ -34,6 +34,22 @@ public class Trek {
     // regione italiana (o "Estero") calcolata dal punto o, se manca, dalla partenza del gpx: vedi RegionLocator
     private String region;
 
+    // valutazione (tutto facoltativo): stelle da 1 a 5 a mezzi punti, fatica e paesaggio da 1 a 10,
+    // tratti pericolosi sì/no (null = non indicato), etichette. Il testo della recensione sono le note
+    private Double rating;
+
+    private Integer effort;
+
+    private Integer scenery;
+
+    private Boolean dangerous;
+
+    // etichette del percorso (lago, bosco, malga...): l'elenco delle possibili lo tiene il frontend
+    @ElementCollection
+    @CollectionTable(name = "trek_tag", joinColumns = @JoinColumn(name = "trek_id"))
+    @Column(name = "tag", nullable = false)
+    private Set<String> tags = new HashSet<>();
+
     @Column(nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -112,6 +128,46 @@ public class Trek {
 
     public void setRegion(String region) {
         this.region = region;
+    }
+
+    public Double getRating() {
+        return rating;
+    }
+
+    public void setRating(Double rating) {
+        this.rating = rating;
+    }
+
+    public Integer getEffort() {
+        return effort;
+    }
+
+    public void setEffort(Integer effort) {
+        this.effort = effort;
+    }
+
+    public Integer getScenery() {
+        return scenery;
+    }
+
+    public void setScenery(Integer scenery) {
+        this.scenery = scenery;
+    }
+
+    public Boolean getDangerous() {
+        return dangerous;
+    }
+
+    public void setDangerous(Boolean dangerous) {
+        this.dangerous = dangerous;
+    }
+
+    public Set<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
     }
 
     public Instant getCreatedAt() {

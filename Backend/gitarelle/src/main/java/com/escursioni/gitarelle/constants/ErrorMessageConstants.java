@@ -31,6 +31,11 @@ public final class ErrorMessageConstants {
     public static final String LAT_OUT_OF_RANGE = "La latitudine deve essere compresa tra -90 e 90";
     public static final String LON_OUT_OF_RANGE = "La longitudine deve essere compresa tra -180 e 180";
     public static final String LOCATION_INCOMPLETE = "Latitudine e longitudine vanno indicate entrambe o nessuna delle due";
+    public static final String RATING_INVALID = "Il voto deve essere tra 1 e 5 stelle, anche a mezze stelle";
+    public static final String EFFORT_OUT_OF_RANGE = "La fatica deve essere un voto da 1 a 10";
+    public static final String SCENERY_OUT_OF_RANGE = "Il paesaggio deve essere un voto da 1 a 10";
+    public static final String TAGS_TOO_MANY = "Puoi scegliere al massimo 30 etichette";
+    public static final String TAG_INVALID = "Ogni etichetta deve avere da 1 a 30 caratteri";
 
     // Cartelle
     public static final String FOLDER_NOT_FOUND = "Cartella con id %d non trovata";

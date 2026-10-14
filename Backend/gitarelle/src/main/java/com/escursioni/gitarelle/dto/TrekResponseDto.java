@@ -19,6 +19,11 @@ public record TrekResponseDto(
         Double lat,
         Double lon,
         String region, // regione italiana o "Estero"; null se il trek non ha né punto né gpx
+        Double rating,      // valutazione: tutti null finché non si valuta
+        Integer effort,
+        Integer scenery,
+        Boolean dangerous,
+        List<String> tags,
         Instant createdAt,
         List<Long> folderIds, // cartelle in cui sta il trek (anche nessuna)
         boolean hasGpx,
@@ -37,6 +42,11 @@ public record TrekResponseDto(
                 trek.getLat(),
                 trek.getLon(),
                 trek.getRegion(),
+                trek.getRating(),
+                trek.getEffort(),
+                trek.getScenery(),
+                trek.getDangerous(),
+                trek.getTags().stream().sorted().toList(),
                 trek.getCreatedAt(),
                 trek.getFolders().stream().map(Folder::getId).sorted().toList(),
                 gpx != null,

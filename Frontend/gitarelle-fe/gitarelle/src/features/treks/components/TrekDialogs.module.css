@@ -46,8 +46,7 @@
 }
 
 /* icona + valore (l'etichetta resta per gli screen reader e nel tooltip) */
-.facts > div,
-.notes {
+.facts > div {
   display: grid;
   grid-template-columns: 18px 1fr;
   gap: 12px;
@@ -59,15 +58,10 @@
   border-bottom: 1px solid var(--border);
 }
 
-.facts dt,
-.notes > svg {
+.facts dt {
   display: flex;
   padding-top: 3px; /* allinea l'icona alla prima riga di testo */
   color: var(--fresh);
-}
-
-.notes > svg {
-  box-sizing: content-box;
 }
 
 .facts dd {
@@ -165,12 +159,51 @@
   }
 }
 
-.notesValue > span {
-  font-size: 14px;
-  font-weight: 400;
-  white-space: pre-line; /* mantiene gli a capo scritti nelle note */
-  max-height: 200px;
-  overflow-y: auto;
+/* dislivello positivo e negativo sulla stessa riga: il secondo porta la sua icona */
+.pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 28px;
+  padding: 2px 0;
+}
+
+.pair > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px; /* come tra icona e valore nelle altre righe */
+}
+
+.pair svg {
+  color: var(--fresh);
+}
+
+/* valore che apre un dettaglio (tempo registrato): cliccabile solo il testo, l'occhio sempre visibile */
+.detailLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: -2px -8px;
+  padding: 2px 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.detailLink > svg {
+  color: var(--fresh);
+}
+
+.detailLink:hover,
+.detailLink:focus-visible {
+  background: rgba(127, 216, 160, 0.08);
+  border-color: rgba(127, 216, 160, 0.3);
+  outline: none;
 }
 
 .inlineInput {

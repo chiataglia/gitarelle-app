@@ -2,6 +2,7 @@ package com.escursioni.gitarelle.services;
 
 import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
+import com.escursioni.gitarelle.dto.TrekReviewRequestDto;
 import com.escursioni.gitarelle.dto.UpdateTrekLocationRequestDto;
 import com.escursioni.gitarelle.entities.Trek;
 import com.escursioni.gitarelle.entities.TrekGpx;
@@ -148,6 +149,22 @@ public class TrekService {
         trek.setLat(requestDto.lat());
         trek.setLon(requestDto.lon());
         refreshRegion(trek);
+        return toResponse(this.trekRepository.save(trek));
+    }
+
+    // Valutazione del trek: sostituisce stelle, fatica, paesaggio, pericoli, etichette e testo (le note)
+    @Transactional
+    public TrekResponseDto updateReview(Long id, TrekReviewRequestDto requestDto) {
+        Trek trek = findTrekById(id);
+        trek.setRating(requestDto.rating());
+        trek.setEffort(requestDto.effort());
+        trek.setScenery(requestDto.scenery());
+        trek.setDangerous(requestDto.dangerous());
+        trek.getTags().clear();
+        if (requestDto.tags() != null) {
+            requestDto.tags().forEach(tag -> trek.getTags().add(tag.trim()));
+        }
+        trek.setNotes(requestDto.notes());
         return toResponse(this.trekRepository.save(trek));
     }
 
