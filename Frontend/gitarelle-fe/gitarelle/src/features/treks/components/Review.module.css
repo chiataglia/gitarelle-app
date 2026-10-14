@@ -1,0 +1,328 @@
+/* ---------- stelle ---------- */
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--accent);
+  line-height: 0;
+}
+
+.starInput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.starsEditable {
+  gap: 4px;
+  padding: 4px;
+  margin: -4px;
+  border-radius: 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.starsEditable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(242, 165, 65, 0.35);
+}
+
+.starsEditable > span {
+  display: flex;
+  transition: transform 0.1s;
+}
+
+.starsEditable > span:hover {
+  transform: scale(1.08);
+}
+
+.starValue {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* ---------- dialog di valutazione ---------- */
+.form {
+  display: grid;
+  gap: 18px;
+}
+
+.group {
+  display: grid;
+  gap: 8px;
+}
+
+.groupHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.groupHead > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.groupHead > small {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fresh);
+}
+
+/* voto 1–10 a segmenti ed etichette a pillole */
+.scale {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+
+.tagGroup {
+  display: grid;
+  gap: 6px;
+}
+
+.tagGroup > small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tagPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scale > button,
+.tagPicker > button {
+  font: inherit;
+  font-weight: 700;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.scale > button {
+  min-width: 0;
+  padding: 8px 0;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+.tagPicker > button {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 999px;
+}
+
+.scale > button:hover,
+.tagPicker > button:hover {
+  border-color: var(--fresh);
+  color: var(--text);
+}
+
+.scale > button:focus-visible,
+.tagPicker > button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(127, 216, 160, 0.3);
+}
+
+.scale > button.on,
+.tagPicker > button.on {
+  color: var(--bg);
+  background: var(--fresh);
+  border-color: var(--fresh);
+}
+
+/* tratti pericolosi: interruttore piccolo e discreto */
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.switch > input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch > span {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 17px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-strong);
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.switch > span::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.switch > input:checked + span {
+  background: rgba(255, 123, 114, 0.25);
+  border-color: var(--danger);
+}
+
+.switch > input:checked + span::after {
+  transform: translateX(13px);
+  background: var(--danger);
+}
+
+.switch > input:focus-visible + span {
+  box-shadow: 0 0 0 3px rgba(127, 216, 160, 0.3);
+}
+
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- riepilogo nella scheda del trek ---------- */
+.summary {
+  display: grid;
+  gap: 10px;
+}
+
+/* valutazione data: niente titolo, solo il riepilogo con la matita in alto a destra */
+.summaryDone {
+  position: relative;
+  padding-right: 34px;
+}
+
+.editPen {
+  position: absolute;
+  top: -2px;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.editPen:hover,
+.editPen:focus-visible {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
+  outline: none;
+}
+
+.editPen:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.summaryHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.summaryTitle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.summaryTitle > svg {
+  width: 18px;
+  color: var(--fresh);
+}
+
+.ratingLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+}
+
+.tag b {
+  color: var(--fresh);
+}
+
+.tagDanger {
+  color: var(--danger);
+  border-color: rgba(255, 123, 114, 0.35);
+  background: rgba(255, 123, 114, 0.08);
+}
+
+/* etichette del percorso: pillole tratteggiate, più leggere dei voti */
+.label {
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fresh);
+  border: 1px dashed rgba(127, 216, 160, 0.45);
+  border-radius: 999px;
+}
+
+.reviewText {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-line; /* mantiene gli a capo scritti nella recensione */
+  overflow-wrap: anywhere;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.summaryEmpty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
