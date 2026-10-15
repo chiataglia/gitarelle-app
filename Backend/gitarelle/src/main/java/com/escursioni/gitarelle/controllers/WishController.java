@@ -5,6 +5,7 @@ import com.escursioni.gitarelle.dto.WishResponseDto;
 import com.escursioni.gitarelle.entities.WishGpx;
 import com.escursioni.gitarelle.services.WishService;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 // Tour da fare (wish list)
@@ -54,7 +56,10 @@ public class WishController {
                 .contentType(MediaType.parseMediaType(
                         gpx.getContentType() != null ? gpx.getContentType() : "application/gpx+xml"
                 ))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + gpx.getFilename() + "\"")
+                // nome codificato in UTF-8 (RFC 5987): negli header sono ammessi solo caratteri ASCII/ISO-8859-1
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(gpx.getFilename() != null ? gpx.getFilename() : "traccia.gpx", StandardCharsets.UTF_8)
+                        .build().toString())
                 .body(gpx.getData());
     }
 

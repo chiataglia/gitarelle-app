@@ -3,6 +3,8 @@ import { TileLayer } from "react-leaflet";
 import L from "leaflet";
 import { LayersIcon } from "./icons";
 import { TILE_MAX_ZOOM } from "./map";
+import PoiLayer from "./PoiLayer";
+import { POI_CATEGORIES, POI_MIN_ZOOM, type PoiCategoryId } from "./poi";
 
 // Viste disponibili (tile gratuite, senza chiave). maxNativeZoom: oltre, Leaflet ingrandisce le tile
 // dell'ultimo livello invece di mostrare la mappa vuota
@@ -61,7 +63,7 @@ const thumbOf = (b: Base) =>
   b.url.replace("{s}", "a").replace("{z}", "9").replace("{x}", "272").replace("{y}", "181").replace("{r}", "");
 
 // Scelta condivisa da tutte le mappe dell'app e ricordata nel browser
-type Prefs = { base: string; trails: boolean };
+type Prefs = { base: string; trails: boolean; poi: PoiCategoryId[] };
 const STORAGE_KEY = "gt-map-layers";
 
 function load(): Prefs {
@@ -70,9 +72,10 @@ function load(): Prefs {
     return {
       base: BASES.some((b) => b.id === p?.base) ? p!.base! : "standard",
       trails: p?.trails === true,
+      poi: Array.isArray(p?.poi) ? p.poi.filter((id) => POI_CATEGORIES.some((c) => c.id === id)) : [],
     };
   } catch {
-    return { base: "standard", trails: false };
+    return { base: "standard", trails: false, poi: [] };
   }
 }
 
@@ -96,7 +99,7 @@ const subscribe = (l: () => void) => {
 
 // Tile della vista scelta + selettore in alto a destra; da mettere dentro un <MapContainer>
 export default function MapLayers() {
-  const { base: baseId, trails } = useSyncExternalStore(subscribe, () => prefs);
+  const { base: baseId, trails, poi } = useSyncExternalStore(subscribe, () => prefs);
   const base = BASES.find((b) => b.id === baseId) ?? BASES[0];
   const [open, setOpen] = useState(false);
 
@@ -162,9 +165,24 @@ export default function MapLayers() {
               <input type="checkbox" checked={trails} onChange={(e) => setPrefs({ trails: e.target.checked })} />
               Sentieri segnati
             </label>
+            <div className="gt-layers-poi" role="group" aria-label="Punti di interesse">
+              <span className="gt-layers-title" title={`Dati OpenStreetMap, visibili da zoom ${POI_MIN_ZOOM}`}>Punti di interesse</span>
+              {POI_CATEGORIES.map((c) => (
+                <label key={c.id} className="gt-layers-toggle">
+                  <input
+                    type="checkbox"
+                    checked={poi.includes(c.id)}
+                    onChange={(e) => setPrefs({ poi: e.target.checked ? [...poi, c.id] : poi.filter((id) => id !== c.id) })}
+                  />
+                  <span aria-hidden="true">{c.icon}</span> {c.label}
+                </label>
+              ))}
+            </div>
           </div>
         )}
       </div>
+
+      <PoiLayer categories={poi} />
     </>
   );
 }

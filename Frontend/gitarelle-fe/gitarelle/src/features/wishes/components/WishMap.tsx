@@ -1,11 +1,12 @@
 import { useEffect } from "react";
 import { MapContainer, Marker, Tooltip, useMap } from "react-leaflet";
-import L, { type LatLngLiteral } from "leaflet";
+import L, { type LatLngLiteral, type Map as LeafletMap } from "leaflet";
 import { TILE_MAX_ZOOM, pinIconFor } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
 import TrackLayer from "../../../shared/TrackLayer";
 import { WISH_COLOR, WISH_FOCUS_COLOR } from "../theme";
 import MapLayers from "../../../shared/MapLayers";
+import InvalidateOnResize from "../../../shared/InvalidateOnResize";
 
 export type WishMapItem = {
   id: number;
@@ -18,6 +19,7 @@ type Props = {
   items: WishMapItem[];
   selectedId: number | null;
   onSelect: (id: number) => void;
+  onMap?: (map: LeafletMap | null) => void; // per chi disegna sopra la stessa mappa (nuova idea)
 };
 
 // senza selezione inquadra tutte le idee (quando cambia ciò che è sulla mappa)
@@ -50,11 +52,12 @@ function Focus({ item }: { item: WishMapItem }) {
 }
 
 // Mappa panoramica di tutte le idee: tracce tratteggiate (percorsi ancora da fare) e pin
-export default function WishMap({ items, selectedId, onSelect }: Props) {
+export default function WishMap({ items, selectedId, onSelect, onMap }: Props) {
   const selected = items.find((i) => i.id === selectedId) ?? null;
   return (
-    <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
+    <MapContainer ref={onMap} center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
       <MapLayers />
+      <InvalidateOnResize />
       {items.map((i) => {
         const color = i.id === selectedId ? WISH_FOCUS_COLOR : WISH_COLOR;
         if (i.gpx) {

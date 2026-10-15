@@ -379,6 +379,104 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   accent-color: var(--accent);
 }
 
+/* punti di interesse (PoiLayer): voci nel pannello delle viste */
+.gt-layers-poi {
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.gt-layers-poi .gt-layers-toggle {
+  padding-top: 0;
+  border-top: none;
+}
+
+.gt-layers-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* icona sulla mappa: tondino scuro con l'emoji della categoria */
+.gt-poi span {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 50%;
+  background: rgba(12, 36, 26, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s;
+}
+
+.gt-poi:hover span {
+  transform: scale(1.2);
+}
+
+/* avvisi in basso a sinistra (zoom insufficiente, caricamento, limite raggiunto) */
+.gt-poi-status {
+  position: absolute;
+  z-index: 1000;
+  left: 10px;
+  bottom: 24px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(12, 36, 26, 0.8);
+  border: 1px solid var(--border-strong);
+  pointer-events: none;
+}
+
+.leaflet-container .leaflet-popup-content-wrapper,
+.leaflet-container .leaflet-popup-tip {
+  color: var(--text);
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.leaflet-container .leaflet-popup-content {
+  margin: 10px 14px;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: var(--muted);
+}
+
+.gt-poi-popup {
+  display: grid;
+  gap: 3px;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+
+.gt-poi-popup strong {
+  font-size: 14px;
+}
+
+.gt-poi-meta {
+  color: var(--muted);
+}
+
+.gt-poi-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.leaflet-container .gt-poi-links a {
+  color: var(--fresh);
+  font-weight: 600;
+}
+
 /* al click su una traccia il browser la mette a fuoco e disegna un rettangolo attorno: via */
 .leaflet-container path.leaflet-interactive:focus {
   outline: none;
@@ -596,6 +694,22 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .gt-wp-end span {
   background: var(--accent);
+}
+
+/* frecce del verso di percorrenza sopra la traccia (DirectionArrows): appena visibili */
+.gt-arrow {
+  pointer-events: none;
+}
+
+.gt-arrow svg {
+  display: block;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.6));
 }
 
 @keyframes drop {

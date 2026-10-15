@@ -2,7 +2,6 @@
    (--fresh) come accento al posto dell'ambra, per distinguerla dallo storico.
    Le variabili valgono solo dentro la sezione e i suoi dialog. */
 .board,
-.planLayout,
 .viewLayout,
 .confirmBody {
   --wish: var(--fresh);
@@ -361,34 +360,169 @@
   gap: 8px;
 }
 
-/* ---------- dialog: nuova idea / modifica (mappa di disegno + pannello) ---------- */
-.planLayout {
+/* ---------- nuova idea / modifica: pannello al posto della lista, disegno sulla mappa ---------- */
+.mapCol {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 16px;
-}
-
-/* colonna sinistra: la mappa è alta quanto basta perché mappa + profilo riempiano lo schermo
-   (e si allunga se il pannello a destra è più alto); il profilo sta sempre subito sotto */
-.planMain {
-  display: flex;
-  flex-direction: column;
   gap: 12px;
   min-width: 0;
 }
 
-.planMap {
-  flex: 1 1 auto;
-  min-height: clamp(300px, calc(100dvh - 560px), 600px);
+/* la mappa si accorcia per lasciare il profilo altimetrico subito sotto */
+.layoutEditing .map {
+  height: clamp(300px, calc(var(--map-h) - 220px), 700px);
+  border-color: var(--wish);
 }
 
-/* ricerca luoghi sopra la mappa, accanto ai pulsanti dello zoom */
+.layoutEditing .listCol {
+  max-height: none;
+  overflow: visible;
+}
+
+/* ricerca luoghi in alto, accanto ai pulsanti dello zoom */
 .mapSearch {
   position: absolute;
   z-index: 1000;
   top: 10px;
   left: 56px;
-  width: min(300px, calc(100% - 112px));
+  width: min(300px, calc(100% - 270px));
+  min-width: 180px;
+}
+
+/* comandi del disegno: tendina verticale a destra, sotto il pulsante delle viste (34px + margini),
+   semitrasparente per vedere la mappa sotto */
+.drawPanel {
+  position: absolute;
+  z-index: 1000;
+  top: 54px;
+  right: 10px;
+  width: 150px;
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(12, 36, 26, 0.62);
+  backdrop-filter: blur(3px);
+  border: 1px solid var(--wish-border);
+  box-shadow: var(--shadow);
+  cursor: default;
+  transition: background 0.15s;
+}
+
+.drawPanel:hover {
+  background: rgba(12, 36, 26, 0.8);
+}
+
+/* chiusa resta solo la linguetta */
+.drawPanelClosed {
+  width: auto;
+}
+
+.drawHeadRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* aiuto: icona piccola accanto all'intestazione */
+.drawInfo {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.drawInfo:hover,
+.drawInfo[aria-pressed="true"] {
+  color: var(--wish);
+  background: rgba(127, 216, 160, 0.14);
+}
+
+.drawHead {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wish);
+  background: transparent;
+  cursor: pointer;
+}
+
+.drawHead:hover {
+  background: rgba(127, 216, 160, 0.1);
+}
+
+.drawChevron {
+  margin-left: auto;
+  font-size: 10px;
+}
+
+.drawGroup {
+  display: grid;
+  gap: 2px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.drawGroup button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.drawGroup button:hover:not(:disabled) {
+  background: rgba(127, 216, 160, 0.12);
+}
+
+.drawGroup button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* verso delle nuove tappe scelto / aiuto aperto */
+.drawGroup button[aria-checked="true"],
+.drawGroup button[aria-pressed="true"] {
+  color: var(--wish-ink);
+  background: var(--wish);
+}
+
+.drawIcon {
+  width: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.drawPanel .routeHelp {
+  padding: 6px;
+  white-space: normal;
 }
 
 .mapSearch .placeRow input,
@@ -400,7 +534,7 @@
 
 /* in basso: in alto c'è già la ricerca. Selettore più specifico di .mapHint (RoutePlanner.module.css),
    che si carica dopo: a pari peso il suo "top" resterebbe e il suggerimento si allungherebbe su tutta la mappa */
-.planMap .planHint {
+.map .planHint {
   top: auto;
   bottom: 28px;
 }
@@ -408,8 +542,73 @@
 .planSide {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--wish-surface);
+  border: 1px solid var(--wish-border);
+}
+
+.planTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.planTitle h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+
+.routeTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--wish);
+}
+
+/* caricamento gpx: riquadro grande e cliccabile, alternativa al disegno */
+.gpxDrop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--wish);
+  background: rgba(127, 216, 160, 0.05);
+  border: 2px dashed var(--wish-border);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.gpxDrop:hover {
+  border-color: var(--wish);
+  background: rgba(127, 216, 160, 0.1);
+}
+
+.gpxDrop span {
+  display: grid;
+  gap: 2px;
+}
+
+.gpxDrop b {
+  color: var(--text);
+  font-size: 14px;
+}
+
+.gpxDrop small {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
 }
 
 /* campi compatti: etichette piccole, meno padding */
@@ -445,10 +644,6 @@
   min-width: 0;
 }
 
-.routeSpacer {
-  flex: 1;
-}
-
 .routeFile {
   flex: 1;
   min-width: 0;
@@ -457,98 +652,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.gpxPill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 12px;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--wish);
-  background: transparent;
-  border: 1px dashed var(--wish-border);
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.gpxPill:hover {
-  border-color: var(--wish);
-  background: rgba(127, 216, 160, 0.08);
-}
-
-/* dove vanno le nuove tappe: due pulsanti a tutta larghezza */
-.addAt {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 3px;
-  gap: 3px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--border);
-}
-
-.addAt button {
-  padding: 6px 8px;
-  border: none;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-  transition: color 0.15s, background 0.15s;
-}
-
-.addAt button:hover {
-  color: var(--text);
-}
-
-.addAt button[aria-checked="true"] {
-  color: var(--wish-ink);
-  background: var(--wish);
-}
-
-/* ritorno per lo stesso percorso / termina alla partenza: uno per riga, le etichette restano intere */
-.routeExtras {
-  display: grid;
-  gap: 6px;
-}
-
-.routeExtras button {
-  padding: 6px 8px;
-  border-radius: 999px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--text);
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.routeExtras button:hover:not(:disabled) {
-  color: var(--wish);
-  border-color: var(--wish);
-  background: rgba(127, 216, 160, 0.08);
-}
-
-.routeExtras button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-
-.iconOn {
-  color: var(--wish);
-  background: rgba(127, 216, 160, 0.14);
 }
 
 .routeHelp {
@@ -755,9 +858,6 @@
 }
 
 @media (max-width: 768px) {
-  .planLayout {
-    grid-template-columns: 1fr;
-  }
   .head {
     flex-direction: column;
     align-items: flex-start;

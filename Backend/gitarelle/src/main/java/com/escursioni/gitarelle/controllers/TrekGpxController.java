@@ -6,11 +6,14 @@ import com.escursioni.gitarelle.entities.TrekGpx;
 import com.escursioni.gitarelle.repositories.TrekGpxMetricsRow;
 import com.escursioni.gitarelle.services.TrekGpxService;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.charset.StandardCharsets;
 
 
 @RestController
@@ -31,7 +34,10 @@ public class TrekGpxController {
                 .contentType(MediaType.parseMediaType(
                         trekGpx.getContentType() != null ? trekGpx.getContentType() : "application/gpx+xml"
                 ))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + trekGpx.getFilename() + "\"")
+                // nome codificato in UTF-8 (RFC 5987): negli header sono ammessi solo caratteri ASCII/ISO-8859-1
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(trekGpx.getFilename() != null ? trekGpx.getFilename() : "traccia.gpx", StandardCharsets.UTF_8)
+                        .build().toString())
                 .body(trekGpx.getData());
     }
 

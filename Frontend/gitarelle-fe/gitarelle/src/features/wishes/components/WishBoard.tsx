@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Map as LeafletMap } from "leaflet";
 import type { Wish } from "../types";
 import { fetchWishes, fetchWishGpxText } from "../api";
 import { errorMessage } from "../../../shared/api";
@@ -8,7 +9,7 @@ import { formatGain, formatKm, formatTrackDuration, trackDurationLabel } from ".
 import { ClockIcon, DistanceIcon, ElevationIcon, ExternalIcon, EyeIcon, FlagIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
 import WishMap, { type WishMapItem } from "./WishMap";
 import WishViewDialog from "./WishViewDialog";
-import WishFormDialog from "./WishFormDialog";
+import WishEditor from "./WishEditor";
 import WishDeleteDialog from "./WishDeleteDialog";
 import styles from "./Wishes.module.css";
 
@@ -35,6 +36,11 @@ export default function WishBoard() {
   const [deleting, setDeleting] = useState<Wish | null>(null);
   const [viewingId, setViewingId] = useState<Wish["id"] | null>(null); // scheda con profilo altimetrico
 
+  // nuova idea / modifica: il pannello prende il posto della lista e si disegna sulla stessa mappa
+  const [map, setMap] = useState<LeafletMap | null>(null);
+  const [mapOverlay, setMapOverlay] = useState<HTMLDivElement | null>(null);
+  const [profileSlot, setProfileSlot] = useState<HTMLDivElement | null>(null);
+
   useEffect(() => {
     fetchWishes()
       .then(setWishes)
@@ -51,7 +57,8 @@ export default function WishBoard() {
     ? wishes.filter((w) => [w.name, w.notes, w.idealPeriod].some((s) => s?.toLowerCase().includes(q)))
     : wishes;
 
-  const mapItems: WishMapItem[] = visible.map((w) => ({
+  // mentre si crea o modifica un'idea le altre spariscono dalla mappa
+  const mapItems: WishMapItem[] = editing ? [] : visible.map((w) => ({
     id: w.id,
     name: w.name,
     gpx: w.hasGpx ? gpxTracks.trackOf(w.id) : null,
@@ -89,14 +96,16 @@ export default function WishBoard() {
             I tour che vuoi fare, prima o poi. Basta un nome; se vuoi disegna il percorso sulla mappa o carica la traccia GPX, e aggiungi un link (Komoot, Wikiloc...).
           </p>
         </div>
-        <button type="button" className={`btn ${styles.btnWish}`} onClick={() => setEditing("new")}>
-          + Nuova idea
-        </button>
+        {!editing && (
+          <button type="button" className={`btn ${styles.btnWish}`} onClick={() => setEditing("new")}>
+            + Nuova idea
+          </button>
+        )}
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {!loading && !error && wishes.length === 0 ? (
+      {!editing && !loading && !error && wishes.length === 0 ? (
         <button type="button" className={styles.emptyCard} onClick={() => setEditing("new")}>
           {/* stessa icona "montagna" dello storico, con una bandierina: meta da raggiungere */}
           <svg className={styles.emptyIcon} viewBox="0 0 64 64" width="52" height="52" aria-hidden="true">
@@ -108,7 +117,7 @@ export default function WishBoard() {
         </button>
       ) : (
         <>
-          {!loading && !error && (
+          {!editing && !loading && !error && (
             <div className={styles.filterRow}>
               <input
                 className={styles.filter}
@@ -123,7 +132,22 @@ export default function WishBoard() {
             </div>
           )}
 
-          <div className={styles.layout}>
+          <div className={`${styles.layout} ${editing ? styles.layoutEditing : ""}`}>
+            {editing ? (
+              <div className={styles.listCol}>
+                {map && (
+                  <WishEditor
+                    key={editing === "new" ? "new" : editing.id}
+                    wish={editing === "new" ? null : editing}
+                    map={map}
+                    mapOverlay={mapOverlay}
+                    profileSlot={profileSlot}
+                    onClose={() => setEditing(null)}
+                    onSaved={onSaved}
+                  />
+                )}
+              </div>
+            ) : (
             <div className={styles.listCol}>
               {loading && [0, 1, 2].map((i) => <div key={i} className={styles.skeleton} />)}
               {!loading && wishes.length > 0 && visible.length === 0 && (
@@ -196,23 +220,19 @@ export default function WishBoard() {
                 })}
               </ul>
             </div>
+            )}
 
-            <div className={`map-frame ${styles.map}`}>
-              <WishMap items={mapItems} selectedId={selectedId} onSelect={(id) => select(id, "map")} />
-              {!loading && onMapCount === 0 && <div className={styles.mapHint}>Nessuna idea ha ancora un percorso</div>}
+            <div className={styles.mapCol}>
+              <div ref={setMapOverlay} className={`map-frame ${styles.map}`}>
+                <WishMap items={mapItems} selectedId={selectedId} onSelect={(id) => select(id, "map")} onMap={setMap} />
+                {!editing && !loading && onMapCount === 0 && <div className={styles.mapHint}>Nessuna idea ha ancora un percorso</div>}
+              </div>
+              {editing && <div ref={setProfileSlot} />}
             </div>
           </div>
         </>
       )}
 
-      {editing && (
-        <WishFormDialog
-          key={editing === "new" ? "new" : editing.id}
-          wish={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-          onSaved={onSaved}
-        />
-      )}
       {deleting && <WishDeleteDialog wish={deleting} onClose={() => setDeleting(null)} onDeleted={onDeleted} />}
       {viewing && !editing && (
         <WishViewDialog
