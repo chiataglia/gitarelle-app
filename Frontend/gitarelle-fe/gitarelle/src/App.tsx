@@ -5,9 +5,8 @@ import HistoryPage from "./features/treks/HistoryPage";
 import NewTrekPage from "./features/treks/NewTrekPage";
 import WishesPage from "./features/wishes/WishesPage";
 import ProfilePage from "./features/profile/ProfilePage";
-import Avatar from "./features/profile/components/Avatar";
+import AccountMenu from "./features/profile/components/AccountMenu";
 import { useAuth } from "./features/auth/AuthContext";
-import { displayName } from "./features/auth/api";
 import BrandMark from "./shared/BrandMark";
 import styles from "./App.module.css";
 
@@ -20,11 +19,28 @@ const NAV = [
 function App() {
   const { user, logout } = useAuth();
 
-  // cambiando pagina si riparte dall'alto
-  const { pathname } = useLocation();
+  // cambiando pagina si riparte dall'alto; con un #sezione (menu del profilo) si scende lì.
+  // Dipende da key: un nuovo clic sulla stessa sezione riporta comunque lì
+  const { pathname, hash, key } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0 });
-  }, [pathname]);
+    if (!hash) {
+      window.scrollTo({ top: 0 });
+      return;
+    }
+    const target = () => document.getElementById(hash.slice(1));
+    const frame = requestAnimationFrame(() => target()?.scrollIntoView({ block: "start" }));
+    // scorrimento morbido da index.css (scroll-behavior), che lo spegne con "riduci movimento".
+    // I dati sopra la sezione arrivano dopo e la spostano: un secondo aggiustamento, se serve
+    const retry = window.setTimeout(() => {
+      const top = target()?.getBoundingClientRect().top;
+      const headerH = headerRef.current?.offsetHeight ?? 0;
+      if (top != null && Math.abs(top - headerH) > 8) target()?.scrollIntoView({ block: "start" });
+    }, 700);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(retry);
+    };
+  }, [pathname, hash, key]);
 
   // altezza vera dell'header (su mobile va su due righe) in --header-h: l'altezza delle mappe ne tiene conto
   const headerRef = useRef<HTMLElement>(null);
@@ -53,19 +69,7 @@ function App() {
               </NavLink>
             ))}
           </nav>
-          {user && (
-            <div className={styles.account}>
-              <NavLink
-                to="/profilo"
-                className={({ isActive }) => `${styles.profileLink} ${isActive ? styles.profileLinkActive : ""}`}
-                title="Il tuo profilo"
-              >
-                <Avatar user={user} size={30} />
-                <span className={styles.username}>{displayName(user)}</span>
-              </NavLink>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>Esci</button>
-            </div>
-          )}
+          {user && <AccountMenu user={user} onLogout={logout} />}
         </div>
       </header>
 

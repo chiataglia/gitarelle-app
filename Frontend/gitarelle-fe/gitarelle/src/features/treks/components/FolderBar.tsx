@@ -16,13 +16,14 @@ type Props = {
   onTreksAdded?: () => void; // dopo un rilascio andato a buon fine (la lista azzera la selezione)
   onAdd: (folder: Folder) => void; // "+ Aggiungi": lo storico mostra i trek non ancora nella cartella, con un "+"
   adding?: boolean;                // modalità "Aggiungi" in corso (il pulsante si nasconde)
+  vertical?: boolean;              // una cartella per riga (pannello accanto alla mappa)
 };
 
 const escursioni = (n: number) => (n === 1 ? "1 escursione" : `${n} escursioni`);
 
 // Filtro dello storico per cartella + gestione delle cartelle (crea, rinomina, elimina, aggiungi trek).
 // Le cartelle accettano i trek trascinati dalla lista
-export default function FolderBar({ value, onChange, dragging = false, onTreksAdded, onAdd, adding = false }: Props) {
+export default function FolderBar({ value, onChange, dragging = false, onTreksAdded, onAdd, adding = false, vertical = false }: Props) {
   const { treks, folders, upsertTreks } = useTreks();
   // "new" = creazione, Folder = rinomina
   const [naming, setNaming] = useState<"new" | Folder | null>(null);
@@ -89,7 +90,7 @@ export default function FolderBar({ value, onChange, dragging = false, onTreksAd
   };
 
   return (
-    <div className={styles.bar}>
+    <div className={`${styles.bar} ${vertical ? styles.vertical : ""}`}>
       <div className={styles.chips} role="tablist" aria-label="Filtra per cartella">
         {chip("all", "Tutti", treks.length)}
         {folders.map((f) => chip(f.id, f.name, countIn(f.id), f))}

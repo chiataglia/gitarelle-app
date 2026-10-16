@@ -13,7 +13,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <section className="section page">
+      <section id="dati" className="section page">
         <div className="section-head">
           <span className="eyebrow">Il tuo profilo</span>
           <h2>{displayName(user)}</h2>
@@ -22,7 +22,7 @@ export default function ProfilePage() {
         <ProfileCard key={user.id} user={user} />
       </section>
 
-      <section className="section">
+      <section id="numeri" className="section">
         <div className="section-head">
           <span className="eyebrow">I tuoi numeri</span>
           <h2>Statistiche</h2>
@@ -31,7 +31,7 @@ export default function ProfilePage() {
         <StatsPanel />
       </section>
 
-      <section className="section">
+      <section id="calendario" className="section">
         <div className="section-head">
           <span className="eyebrow">Mese per mese</span>
           <h2>Calendario</h2>

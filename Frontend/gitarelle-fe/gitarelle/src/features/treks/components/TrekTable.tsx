@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { Folder, Trek } from "../types";
 import styles from "./TrekTable.module.css";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
-import { EyeIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
+import { colorForId } from "../../../shared/map";
+import { DistanceIcon, ElevationIcon, EyeIcon, FolderIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
 
 type SortKey = "date" | "title" | "distance" | "gain";
 type Sort = { key: SortKey; desc: boolean };
@@ -45,8 +46,8 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
     return sort.desc ? -cmp : cmp;
   });
 
-  // nomi delle cartelle del trek, nello stesso ordine (alfabetico) della barra delle cartelle
-  const folderNames = (t: Trek) => folders.filter((f) => t.folderIds.includes(f.id)).map((f) => f.name).join(", ") || null;
+  // cartelle del trek, nello stesso ordine (alfabetico) della barra delle cartelle
+  const foldersOf = (t: Trek) => folders.filter((f) => t.folderIds.includes(f.id));
 
   // click sulla stessa colonna inverte il verso; su una nuova parte dal verso più utile
   function sortBy(key: SortKey) {
@@ -96,9 +97,14 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
             </thead>
             <tbody>
               {rows.map((t) => (
-                <tr key={t.id}>
+                // il colore è quello della traccia sulla mappa
+                <tr key={t.id} style={{ "--row-color": colorForId(t.id) } as React.CSSProperties}>
                   <td className={styles.date}>
-                    {formatDate(t.trekDate, { day: "2-digit", month: "short", year: "numeric" }) || "–"}
+                    <div className={styles.dateBadge}>
+                      <span>{formatDate(t.trekDate, { day: "2-digit" }) || "–"}</span>
+                      <small>{formatDate(t.trekDate, { month: "short" })}</small>
+                      <em>{formatDate(t.trekDate, { year: "numeric" })}</em>
+                    </div>
                   </td>
                   <td className={styles.titleCell}>
                     <button type="button" className={styles.titleBtn} onClick={() => onView(t)} title="Vedi i dettagli">
@@ -106,10 +112,26 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
                     </button>
                     {t.amichetti && <small>con {t.amichetti}</small>}
                   </td>
-                  <td className={styles.colFolder}>{folderNames(t) ?? <span className={styles.muted}>—</span>}</td>
-                  <td className={styles.colFolder}>{t.region ?? <span className={styles.muted}>—</span>}</td>
-                  <td className={styles.num}>{t.distanceMeters != null ? formatKm(t.distanceMeters) : <span className={styles.muted}>—</span>}</td>
-                  <td className={styles.num}>{t.elevationGainMeters != null ? formatGain(t.elevationGainMeters) : <span className={styles.muted}>—</span>}</td>
+                  <td className={styles.colFolder}>
+                    {foldersOf(t).length > 0 ? (
+                      <div className={styles.folderChips}>
+                        {foldersOf(t).map((f) => <span key={f.id} className={styles.folderChip}><FolderIcon size={11} />{f.name}</span>)}
+                      </div>
+                    ) : <span className={styles.muted}>—</span>}
+                  </td>
+                  <td className={styles.colFolder}>
+                    {t.region ? <span className={styles.region}><PinIcon size={13} />{t.region}</span> : <span className={styles.muted}>—</span>}
+                  </td>
+                  <td className={styles.num}>
+                    {t.distanceMeters != null
+                      ? <span className={styles.metric}><DistanceIcon size={13} />{formatKm(t.distanceMeters)}</span>
+                      : <span className={styles.muted}>—</span>}
+                  </td>
+                  <td className={styles.num}>
+                    {t.elevationGainMeters != null
+                      ? <span className={styles.metric}><ElevationIcon size={13} />{formatGain(t.elevationGainMeters)}</span>
+                      : <span className={styles.muted}>—</span>}
+                  </td>
                   <td className={styles.colActions}>
                     <div className={styles.tools}>
                       <button

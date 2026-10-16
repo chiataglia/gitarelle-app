@@ -70,6 +70,37 @@
   font-size: 10px;
   font-weight: 800;
   fill: var(--bg);
+  pointer-events: none;
+  user-select: none;
+}
+
+.markerDot {
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+/* tappe cliccabili e trascinabili lungo l'asse */
+.markerHandle {
+  cursor: grab;
+  touch-action: none;
+}
+
+.markerHandle:hover .marker {
+  stroke: var(--accent);
+}
+
+.markerDragging {
+  cursor: grabbing;
+}
+
+.markerDragging .marker {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.markerGuideActive {
+  stroke: var(--accent);
+  stroke-opacity: 0.8;
 }
 
 .markerGuide {

@@ -3,7 +3,7 @@ import { CircleMarker, MapContainer, Marker, useMapEvents } from "react-leaflet"
 import type { LatLngLiteral } from "leaflet";
 import type { Trek, TrekPayload } from "../types";
 import { useTreks } from "../TreksContext";
-import { updateTrek, updateTrekLocation } from "../api";
+import { updateTrek, updateTrekLocation, uploadGpx } from "../api";
 import type { ParsedGpx } from "../../../shared/gpx";
 import { errorMessage } from "../../../shared/api";
 import Modal from "../../../shared/Modal";
@@ -148,6 +148,23 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
       <PencilIcon size={12} />
     </button>
   );
+
+  // trek senza traccia: si può caricare il gpx da qui (il trek passa a hasGpx e la scheda mostra la traccia)
+  async function onGpxPicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setSaving(true);
+      setError(null);
+      upsertTrek(await uploadGpx(trek.id, file));
+      setPicking(false);
+    } catch (err) {
+      setError(errorMessage(err, "Errore nel caricamento del GPX"));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function savePoint() {
     if (!draftPoint) return;
@@ -326,9 +343,15 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
                 <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPicking(false)} disabled={saving}>Annulla</button>
               </>
             ) : (
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraftPoint(savedPoint); setPicking(true); }} disabled={saving}>
-                📍 {savedPoint ? "Sposta punto" : "Aggiungi punto"}
-              </button>
+              <>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setDraftPoint(savedPoint); setPicking(true); }} disabled={saving}>
+                  📍 {savedPoint ? "Sposta punto" : "Aggiungi punto"}
+                </button>
+                <label className="btn btn-ghost btn-sm">
+                  ⤒ Carica GPX
+                  <input type="file" accept=".gpx" hidden onChange={onGpxPicked} disabled={saving} />
+                </label>
+              </>
             )}
           </div>}
         </div>

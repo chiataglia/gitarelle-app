@@ -1,9 +1,6 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
-import L from "leaflet";
-
-// Italia intera, isole comprese
-export const ITALY_BOUNDS = L.latLngBounds([36.6, 6.6], [47.1, 18.6]);
+import { italyView } from "./map";
 
 // Inquadratura di partenza sull'Italia intera; poi la mappa si sposta liberamente, anche fuori.
 // Da mettere dentro un <MapContainer>, prima di chi inquadra altro (traccia, ultimo trek...).
@@ -18,7 +15,8 @@ export default function ItalyView() {
     const sized = () => container.clientWidth > 0 && container.clientHeight > 0;
     const fit = () => {
       map.invalidateSize();
-      map.fitBounds(ITALY_BOUNDS, { animate: false });
+      const { center, zoom } = italyView(map);
+      map.setView(center, zoom, { animate: false });
     };
     if (sized()) {
       fit();

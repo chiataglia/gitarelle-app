@@ -1,0 +1,169 @@
+/* Pulsante "Filtri" dello storico con il pannello a tendina (stesso stile della tendina del profilo) */
+.wrap {
+  position: relative;
+}
+
+/* stesso aspetto delle chip delle cartelle */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.btn:hover,
+.open .btn {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+.btnOn,
+.btnOn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.badge {
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent);
+}
+
+.menu {
+  position: absolute;
+  z-index: 1100;
+  top: 100%;
+  right: 0;
+  padding-top: 8px;
+  width: 280px;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.18s;
+}
+
+.open .menu {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s;
+}
+
+.panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform-origin: top right;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.open .panel {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.2s ease, transform 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+}
+
+.field > span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.chip small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.chip:hover {
+  border-color: var(--border-strong);
+}
+
+.chip[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgba(242, 165, 65, 0.12);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.reset {
+  padding: 0;
+  border: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  cursor: pointer;
+}
+
+.reset:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    transition: none !important;
+  }
+}

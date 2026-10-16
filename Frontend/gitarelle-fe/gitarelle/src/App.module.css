@@ -112,27 +112,27 @@
   border-top: 1px solid var(--border);
 }
 
-/* utente collegato + "Esci" */
+/* utente collegato: solo l'avatar, con la tendina del profilo al passaggio del mouse */
 .account {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
   flex: none;
 }
 
-/* avatar + nome: porta alla pagina del profilo */
 .profileLink {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 3px 12px 3px 3px;
+  gap: 4px;
+  padding: 3px 6px 3px 3px;
   border-radius: 999px;
   text-decoration: none;
   border: 1px solid transparent;
   transition: background 0.15s, border-color 0.15s;
 }
 
-.profileLink:hover {
+.profileLink:hover,
+.accountOpen .profileLink {
   background: rgba(255, 255, 255, 0.07);
 }
 
@@ -140,13 +140,136 @@
   border-color: var(--accent);
 }
 
-.username {
+.accountChevron {
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  transition: transform 0.25s ease, color 0.15s;
+}
+
+.accountOpen .accountChevron {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+
+/* contenitore trasparente attaccato all'avatar: il padding fa da ponte, così il mouse non "cade" nel vuoto */
+.accountMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  padding-top: 10px;
+  min-width: 172px;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.2s;
+}
+
+.accountOpen .accountMenu {
+  visibility: visible;
+  pointer-events: auto;
+  transition: visibility 0s;
+}
+
+/* entra scendendo e ingrandendosi dall'angolo dell'avatar; esce più in fretta */
+.accountPanel {
+  display: grid;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  transform-origin: top right;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.accountOpen .accountPanel {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.22s ease, transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+/* le voci arrivano a cascata, una dopo l'altra */
+.accountPanel > * {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.1s, transform 0.1s;
+}
+
+.accountOpen .accountPanel > * {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition-delay: calc(var(--i, 0) * 35ms + 40ms);
+}
+
+.accountWho {
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.accountWho strong {
   font-size: 14px;
-  font-weight: 600;
-  max-width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.accountWho small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.accountPanel a,
+.accountPanel button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.accountPanel a:hover,
+.accountPanel a:focus-visible,
+.accountPanel button:hover,
+.accountPanel button:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+  outline: none;
+}
+
+.accountPanel hr {
+  margin: 4px 6px;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+.accountPanel .accountLogout {
+  color: var(--muted);
+}
+
+.accountPanel .accountLogout:hover,
+.accountPanel .accountLogout:focus-visible {
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accountPanel,
+  .accountPanel > *,
+  .accountChevron {
+    transition: none !important;
+  }
 }
 
 @media (max-width: 1024px) {
@@ -190,11 +313,5 @@
 @media (max-width: 480px) {
   .brand {
     font-size: 20px;
-  }
-  .username {
-    display: none;
-  }
-  .profileLink {
-    padding-right: 3px;
   }
 }

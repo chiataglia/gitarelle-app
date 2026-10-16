@@ -375,64 +375,20 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* il checkbox non prende lo stile dei campi (largo 100%, con padding): quadratino a sinistra, testo su una riga */
+.gt-layers-toggle {
+  justify-content: flex-start;
+  white-space: nowrap;
+}
+
 .gt-layers-toggle input {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  padding: 0;
   accent-color: var(--accent);
-}
-
-/* punti di interesse (PoiLayer): voci nel pannello delle viste */
-.gt-layers-poi {
-  display: grid;
-  gap: 6px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.gt-layers-poi .gt-layers-toggle {
-  padding-top: 0;
-  border-top: none;
-}
-
-.gt-layers-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-/* icona sulla mappa: tondino scuro con l'emoji della categoria */
-.gt-poi span {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  line-height: 1;
-  border-radius: 50%;
-  background: rgba(12, 36, 26, 0.82);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-  transition: transform 0.15s;
-}
-
-.gt-poi:hover span {
-  transform: scale(1.2);
-}
-
-/* avvisi in basso a sinistra (zoom insufficiente, caricamento, limite raggiunto) */
-.gt-poi-status {
-  position: absolute;
-  z-index: 1000;
-  left: 10px;
-  bottom: 24px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text);
-  background: rgba(12, 36, 26, 0.8);
-  border: 1px solid var(--border-strong);
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .leaflet-container .leaflet-popup-content-wrapper,
@@ -448,33 +404,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .leaflet-container a.leaflet-popup-close-button {
   color: var(--muted);
-}
-
-.gt-poi-popup {
-  display: grid;
-  gap: 3px;
-  font-family: var(--font-body);
-  font-size: 12px;
-}
-
-.gt-poi-popup strong {
-  font-size: 14px;
-}
-
-.gt-poi-meta {
-  color: var(--muted);
-}
-
-.gt-poi-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 4px;
-}
-
-.leaflet-container .gt-poi-links a {
-  color: var(--fresh);
-  font-weight: 600;
 }
 
 /* al click su una traccia il browser la mette a fuoco e disegna un rettangolo attorno: via */
@@ -607,6 +536,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .gt-map-btn:focus-visible {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* "Home" (torna all'Italia): nell'angolo in basso a sinistra */
+.gt-home-btn {
+  position: absolute;
+  z-index: 1000;
+  bottom: 10px;
+  left: 10px;
 }
 
 .gt-pin span {

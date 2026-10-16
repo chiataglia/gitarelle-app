@@ -17,14 +17,13 @@ import { useRoutePlanner } from "../../routes/useRoutePlanner";
 import { toGpxFile } from "../../routes/route";
 import PlaceSearch from "./PlaceSearch";
 import { WISH_DRAW_COLOR } from "../theme";
-import { ClockIcon, DistanceIcon, ElevationIcon, InfoIcon, PencilIcon, EraserIcon, TrashIcon, UndoIcon, UploadIcon } from "../../../shared/icons";
+import { ClockIcon, DistanceIcon, ElevationIcon, ElevationLossIcon, InfoIcon, PencilIcon, EraserIcon, TrashIcon, UndoIcon, UploadIcon } from "../../../shared/icons";
 import styles from "./Wishes.module.css";
 
 type Props = {
   wish: Wish | null; // null = nuova idea
   map: LeafletMap; // la mappa della sezione: il disegno ci si appoggia sopra
   mapOverlay: HTMLElement | null; // riquadro della mappa: ricerca luoghi e suggerimenti
-  profileSlot: HTMLElement | null; // sotto la mappa: profilo altimetrico
   onClose: () => void;
   onSaved: (wish: Wish, gpxChanged: boolean) => void;
 };
@@ -39,10 +38,9 @@ function FlyTo({ target }: { target: LatLngLiteral | null }) {
 
 // Creazione e modifica di un'idea dentro la sezione: il pannello prende il posto della lista e il
 // percorso si disegna sulla stessa mappa delle idee (tappe lungo i sentieri) oppure si carica un gpx.
-// La ricerca luoghi sta sopra la mappa, il profilo sotto. La posizione dell'idea è la partenza del percorso
-export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose, onSaved }: Props) {
+// La ricerca luoghi sta sopra la mappa, il profilo nel pannello sotto il percorso. La posizione dell'idea è la partenza del percorso
+export default function WishEditor({ wish, map, mapOverlay, onClose, onSaved }: Props) {
   const [name, setName] = useState(wish?.name ?? "");
-  const [link, setLink] = useState(wish?.link ?? "");
   const [notes, setNotes] = useState(wish?.notes ?? "");
   // un'idea col solo punto parte inquadrata lì (con la traccia ci pensa TrackLayer)
   const [flyTo, setFlyTo] = useState<LatLngLiteral | null>(
@@ -90,6 +88,17 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
     return () => { el.style.cursor = ""; };
   }, [map, drawing]);
 
+  // la tendina del disegno sta sotto il selettore delle viste: quando questo si apre la si sposta giù,
+  // così si vedono entrambe senza sovrapporsi
+  const [layersH, setLayersH] = useState(34);
+  useEffect(() => {
+    const layers = map.getContainer().querySelector<HTMLElement>(".gt-layers");
+    if (!layers) return;
+    const ro = new ResizeObserver(() => setLayersH(layers.offsetHeight));
+    ro.observe(layers);
+    return () => ro.disconnect();
+  }, [map]);
+
   async function onPickGpx(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
@@ -116,15 +125,29 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
   }
 
   // traccia mostrata e misurata: il disegno in corso oppure quella caricata
-  const track = drawing ? planner.track : loaded;
+  const liveTrack = drawing ? planner.track : loaded;
+  // le tappe del disegno anche sul profilo (sull'asse della distanza), numerate come sulla mappa
+  const liveMarkers = useMemo<ProfileMarker[] | undefined>(() => (drawing
+    ? planner.waypointDistances.map((d, i, all) => ({ d, label: String(i + 1), kind: i === 0 ? "start" : i === all.length - 1 ? "end" : "via" }))
+    : undefined), [drawing, planner.waypointDistances]);
+
+  // Mentre il percorso si ricalcola (es. una tappa spostata) la traccia nuova non c'è ancora: profilo e
+  // numeri restano quelli di prima, un po' spenti, invece di sparire e ricomparire. La tappa spostata
+  // dal profilo resta già dove è stata lasciata
+  const [kept, setKept] = useState<{ track: ParsedGpx; markers?: ProfileMarker[] } | null>(null);
+  if (liveTrack && (kept?.track !== liveTrack || kept.markers !== liveMarkers)) setKept({ track: liveTrack, markers: liveMarkers });
+  const recalculating = drawing && planner.loading && liveTrack == null && kept != null;
+  const [moved, setMoved] = useState<{ i: number; d: number } | null>(null);
+  if (moved && !recalculating) setMoved(null);
+
+  const track = liveTrack ?? (recalculating ? kept.track : null);
   const stats = track ? trackStats(track) : null;
   const duration = track ? trackDuration(track) : null;
   const profile = useMemo(() => (track ? computeProfile(track) : null), [track]);
   const [profilePoint, setProfilePoint] = useState<ProfilePoint | null>(null);
-  // le tappe del disegno anche sul profilo, numerate come sulla mappa
-  const profileMarkers: ProfileMarker[] | undefined = drawing
-    ? planner.waypointDistances.map((d, i, all) => ({ d, label: String(i + 1), kind: i === 0 ? "start" : i === all.length - 1 ? "end" : "via" }))
-    : undefined;
+  const profileMarkers = recalculating
+    ? kept.markers?.map((m, i) => (moved?.i === i ? { ...m, d: moved.d } : m))
+    : liveMarkers;
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,7 +166,7 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
     const payload = {
       name: name.trim(),
       idealPeriod: wish?.idealPeriod ?? null, // non più nel form: si conserva quello già salvato
-      link: link.trim() || null,
+      link: wish?.link ?? null, // non più nel form: si conserva quello già salvato
       notes: notes.trim() || null,
       lat: start?.lat ?? (remove ? null : wish?.lat ?? null),
       lon: start?.lng ?? (remove ? null : wish?.lon ?? null),
@@ -180,7 +203,7 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
           loaded && <TrackLayer gpx={loaded} trackKey={`wish-form-${loadedKey}`} color={WISH_DRAW_COLOR} />
         )}
         {/* verso di percorrenza, sia sul disegno sia sulla traccia caricata */}
-        {track && <DirectionArrows gpx={track} />}
+        {liveTrack && <DirectionArrows gpx={liveTrack} />}
         {profilePoint && (
           <CircleMarker center={[profilePoint.lat, profilePoint.lng]} radius={7}
             pathOptions={{ color: "#fff", weight: 3, fillColor: slopeColor(profilePoint.slope), fillOpacity: 1 }} />
@@ -201,7 +224,10 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
 
           {/* comandi del disegno: tendina verticale a destra, sotto il pulsante delle viste */}
           {drawing && (
-            <div className={`${styles.drawPanel} ${toolsOpen ? "" : styles.drawPanelClosed}`}>
+            <div
+              className={`${styles.drawPanel} ${toolsOpen ? "" : styles.drawPanelClosed}`}
+              style={{ top: 10 + layersH + 10 }} // 10px dal bordo come le viste, poi 10px di stacco
+            >
               <div className={styles.drawHeadRow}>
                 <button
                   type="button"
@@ -279,19 +305,6 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
         mapOverlay,
       )}
 
-      {profileSlot && createPortal(
-        profile ? (
-          <div className={styles.planProfile}>
-            <ElevationProfile profile={profile} onHover={setProfilePoint} markers={profileMarkers} />
-          </div>
-        ) : (
-          <div className={styles.planProfileEmpty}>
-            {track ? "Questa traccia non ha le quote: profilo altimetrico non disponibile" : "Qui comparirà il profilo altimetrico del percorso"}
-          </div>
-        ),
-        profileSlot,
-      )}
-
       {/* il pannello prende il posto della lista delle idee */}
       <form onSubmit={onSubmit} className={styles.planSide}>
         <div className={styles.planTitle}>
@@ -301,18 +314,17 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
           </button>
         </div>
 
-        <label className={`field ${styles.compactField}`}>
-          <span>Nome *</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Es. Alta Via n.1 delle Dolomiti" required autoFocus />
-        </label>
-        <label className={`field ${styles.compactField}`}>
-          <span>Link</span>
-          <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://www.komoot.com/..." />
-        </label>
-        <label className={`field ${styles.compactField}`}>
-          <span>Note</span>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Perché ci vuoi andare, con chi, cosa serve..." />
-        </label>
+        {/* campi compatti: etichetta a sinistra, campo accanto */}
+        <div className={styles.compactFields}>
+          <label className={styles.compactField}>
+            <span>Nome *</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} placeholder="Es. Alta Via n.1 delle Dolomiti" required autoFocus />
+          </label>
+          <label className={styles.compactField}>
+            <span>Note</span>
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Perché ci vuoi andare, con chi..." />
+          </label>
+        </div>
 
         {/* percorso: riquadro a parte, con più spazio ora che sta nella colonna della lista */}
         <section className={styles.routeBox} aria-label="Percorso">
@@ -355,11 +367,30 @@ export default function WishEditor({ wish, map, mapOverlay, profileSlot, onClose
           <div className={styles.routeStats}>
             <span title="Distanza"><DistanceIcon size={14} />{stats ? formatKm(stats.distance) : "—"}</span>
             <span title="Dislivello positivo"><ElevationIcon size={14} />{stats?.gain != null ? `+${formatGain(stats.gain)}` : "—"}</span>
+            <span title="Dislivello negativo"><ElevationLossIcon size={14} />{stats?.loss != null ? `−${formatGain(stats.loss)}` : "—"}</span>
             <span title={duration ? trackDurationLabel(duration) : "Tempo di percorrenza"}><ClockIcon size={14} />{duration ? formatTrackDuration(duration) : "—"}</span>
           </div>
 
           {drawing && planner.loading && <p className={styles.routeStatus}>Calcolo del percorso lungo i sentieri…</p>}
           {drawing && planner.error && <p className={`${styles.routeStatus} ${styles.routeError}`}>{planner.error}</p>}
+
+          {profile && (
+            <div className={recalculating ? styles.profileBusy : styles.profileLive}>
+            <ElevationProfile
+              profile={profile}
+              onHover={setProfilePoint}
+              markers={profileMarkers}
+              // clic su una tappa: la mappa ci vola; trascinata lungo l'asse: si sposta sul punto della traccia
+              // a quella distanza e il percorso si ricalcola
+              onMarkerClick={drawing && !recalculating ? (i) => setFlyTo({ ...planner.waypoints[i] }) : undefined}
+              onMarkerMove={drawing && !recalculating ? (i, p) => {
+                planner.move(i, { lat: p.lat, lng: p.lng });
+                setMoved({ i, d: p.d });
+                setProfilePoint(null);
+              } : undefined}
+            />
+            </div>
+          )}
         </section>
 
         {error && <div className="alert alert-error">{error}</div>}

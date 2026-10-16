@@ -74,3 +74,16 @@ export function pinAddIconFor(color: string) {
 
 export const isPinAddClick = (e: L.LeafletMouseEvent) =>
   (e.originalEvent.target as HTMLElement | null)?.closest(".gt-pin-add") != null;
+
+// Italia intera, isole comprese
+export const ITALY_BOUNDS = L.latLngBounds([36.6, 6.6], [47.1, 18.6]);
+
+// Centro e zoom per vedere l'Italia. fitBounds arrotonda lo zoom per difetto (a scatti interi) e
+// su molte finestre si vedeva mezza Europa: qui si arrotonda al più vicino, a costo di tagliare un filo i bordi
+export function italyView(map: L.Map): { center: L.LatLng; zoom: number } {
+  const size = map.getSize();
+  const nw = map.project(ITALY_BOUNDS.getNorthWest(), 0);
+  const se = map.project(ITALY_BOUNDS.getSouthEast(), 0);
+  const scale = Math.min(size.x / (se.x - nw.x), size.y / (se.y - nw.y));
+  return { center: ITALY_BOUNDS.getCenter(), zoom: Math.round(map.getScaleZoom(scale, 0)) };
+}

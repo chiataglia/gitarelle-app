@@ -9,6 +9,7 @@ import TrackLayer from "../../../shared/TrackLayer";
 import InvalidateOnResize from "../../../shared/InvalidateOnResize";
 import ItalyView from "../../../shared/ItalyView";
 import MapLayers from "../../../shared/MapLayers";
+import HomeButton from "../../../shared/HomeButton";
 
 // da questo zoom in su i gruppi si sciolgono e compaiono le tracce dei trek inquadrati
 export const TRACK_ZOOM = 10;
@@ -19,6 +20,7 @@ export type ClusterItem = {
   color: string;
   point: LatLngLiteral | null; // dove sta il pin (punto del trek o partenza del gpx)
   gpx: ParsedGpx | null;       // disegnata solo se il trek è inquadrato e lo zoom è sufficiente
+  trackPending?: boolean;      // traccia ancora in download
 };
 
 export type MapView = { zoom: number; bounds: L.LatLngBounds };
@@ -78,26 +80,13 @@ function ClusterLayer({ items, onSelect, onAdd }: { items: ClusterItem[]; onSele
   return null;
 }
 
-// zoom di partenza sull'ultimo trek aggiunto: abbastanza vicino da vedere le tracce della zona
-const START_ZOOM = 12;
-
-// All'apertura inquadra la zona dell'ultimo trek aggiunto (startKey); quando cambia fitKey (es. cambio
-// cartella) inquadra tutti i pin. Non ad ogni selezione: per il resto la mappa si muove liberamente
-function FitView({ items, fitKey, startKey }: { items: ClusterItem[]; fitKey: string; startKey: string | null }) {
+// All'apertura resta l'Italia intera (ItalyView); quando cambia fitKey (es. cambio cartella)
+// inquadra tutti i pin. Non ad ogni selezione: per il resto la mappa si muove liberamente
+function FitView({ items, fitKey }: { items: ClusterItem[]; fitKey: string }) {
   const map = useMap();
-  const fitted = useRef<string | null>(null);
+  const fitted = useRef(fitKey);
   useEffect(() => {
     if (fitted.current === fitKey) return;
-    if (fitted.current === null && startKey != null) {
-      const start = items.find((i) => i.key === startKey);
-      // trek senza punto: il pin è la partenza del gpx, che si aspetta finché non è scaricato
-      if (start && !start.point) return;
-      if (start?.point) {
-        map.setView(start.point, START_ZOOM, { animate: false });
-        fitted.current = fitKey;
-        return;
-      }
-    }
     // pin e, se già scaricate, tracce intere: così le tracce non escono dal bordo
     const bounds = L.latLngBounds([]);
     for (const i of items) {
@@ -105,9 +94,10 @@ function FitView({ items, fitKey, startKey }: { items: ClusterItem[]; fitKey: st
       if (i.gpx?.bounds) bounds.extend(i.gpx.bounds);
     }
     if (!bounds.isValid()) return;
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+    // volo morbido verso la nuova zona (fitBounds, da lontano, salta di colpo)
+    map.flyToBounds(bounds, { padding: [40, 40], maxZoom: 13, duration: 0.9, easeLinearity: 0.2 });
     fitted.current = fitKey;
-  }, [map, items, fitKey, startKey]);
+  }, [map, items, fitKey]);
   return null;
 }
 
@@ -115,17 +105,18 @@ function FitView({ items, fitKey, startKey }: { items: ClusterItem[]; fitKey: st
 // così si può reinquadrare lo stesso trek dopo aver spostato la mappa
 export type FocusRequest = { key: string; seq: number };
 
-// zoom sulla traccia del trek richiesto (o sul suo punto, se la traccia non c'è);
-// se la traccia arriva dopo (era ancora da scaricare) si reinquadra sulla traccia intera
+// volo sulla traccia del trek richiesto (o sul suo punto, se la traccia non c'è). Se la traccia è
+// ancora in download si aspetta che arrivi, così il volo è uno solo e finisce già sulla traccia intera
 function FocusOn({ items, focus }: { items: ClusterItem[]; focus: FocusRequest | null }) {
   const map = useMap();
-  const hasTrack = focus != null && items.some((i) => i.key === focus.key && i.gpx?.bounds);
+  const target = focus != null ? items.find((i) => i.key === focus.key) : undefined;
+  const ready = target != null && !target.trackPending;
   useEffect(() => {
-    if (!focus) return;
+    if (!focus || !ready) return;
     const item = items.find((i) => i.key === focus.key);
-    if (item?.gpx?.bounds) map.flyToBounds(item.gpx.bounds, { padding: [40, 40], duration: 0.8 });
-    else if (item?.point) map.flyTo(item.point, 14, { duration: 0.8 });
-  }, [map, focus, hasTrack]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (item?.gpx?.bounds) map.flyToBounds(item.gpx.bounds, { padding: [40, 40], duration: 1.1, easeLinearity: 0.2 });
+    else if (item?.point) map.flyTo(item.point, 14, { duration: 1.1, easeLinearity: 0.2 });
+  }, [map, focus, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -154,7 +145,6 @@ type Props = {
   items: ClusterItem[];
   tracks: ClusterItem[]; // sottoinsieme di items di cui disegnare la traccia
   fitKey: string;
-  startKey: string | null; // trek su cui si apre la mappa (l'ultimo aggiunto)
   onViewChange: (view: MapView) => void;
   onSelect: (key: string) => void; // click su un pin o su una traccia
   onAdd?: (key: string) => void;   // modalità "Aggiungi": "+" accanto a ogni pin per metterlo nella cartella
@@ -162,17 +152,18 @@ type Props = {
 };
 
 // Mappa dello storico: numeri per zona da lontano, tracce da vicino
-export default function TrekClusterMap({ items, tracks, fitKey, startKey, onViewChange, onSelect, onAdd, focus }: Props) {
+export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, onAdd, focus }: Props) {
   return (
     <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
       <ViewWatcher onChange={onViewChange} />
       <MapLayers />
       <ItalyView />
+      <HomeButton />
       <ClusterLayer items={items} onSelect={onSelect} onAdd={onAdd} />
       {tracks.map((i) => i.gpx && (
         <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} pin={false} onClick={() => onSelect(i.key)} />
       ))}
-      <FitView items={items} fitKey={fitKey} startKey={startKey} />
+      <FitView items={items} fitKey={fitKey} />
       <FocusOn items={items} focus={focus} />
       <InvalidateOnResize />
     </MapContainer>

@@ -39,7 +39,6 @@ export default function WishBoard() {
   // nuova idea / modifica: il pannello prende il posto della lista e si disegna sulla stessa mappa
   const [map, setMap] = useState<LeafletMap | null>(null);
   const [mapOverlay, setMapOverlay] = useState<HTMLDivElement | null>(null);
-  const [profileSlot, setProfileSlot] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchWishes()
@@ -92,9 +91,6 @@ export default function WishBoard() {
         <div className="section-head">
           <span className="eyebrow">Da fare</span>
           <h2>Prossime avventure</h2>
-          <p>
-            I tour che vuoi fare, prima o poi. Basta un nome; se vuoi disegna il percorso sulla mappa o carica la traccia GPX, e aggiungi un link (Komoot, Wikiloc...).
-          </p>
         </div>
         {!editing && (
           <button type="button" className={`btn ${styles.btnWish}`} onClick={() => setEditing("new")}>
@@ -117,38 +113,39 @@ export default function WishBoard() {
         </button>
       ) : (
         <>
-          {!editing && !loading && !error && (
-            <div className={styles.filterRow}>
-              <input
-                className={styles.filter}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Filtra per nome, note o periodo..."
-                aria-label="Filtra le idee"
-              />
-              <span className={styles.filterCount}>
-                {visible.length === wishes.length ? `${wishes.length} idee` : `${visible.length} di ${wishes.length}`}
-              </span>
-            </div>
-          )}
-
           <div className={`${styles.layout} ${editing ? styles.layoutEditing : ""}`}>
             {editing ? (
               <div className={styles.listCol}>
+                <div className={styles.listScroll}>
                 {map && (
                   <WishEditor
                     key={editing === "new" ? "new" : editing.id}
                     wish={editing === "new" ? null : editing}
                     map={map}
                     mapOverlay={mapOverlay}
-                    profileSlot={profileSlot}
                     onClose={() => setEditing(null)}
                     onSaved={onSaved}
                   />
                 )}
+                </div>
               </div>
             ) : (
             <div className={styles.listCol}>
+              {!loading && !error && (
+                <div className={styles.filterRow}>
+                  <input
+                    className={styles.filter}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Filtra per nome, note o periodo..."
+                    aria-label="Filtra le idee"
+                  />
+                  <span className={styles.filterCount}>
+                    {visible.length === wishes.length ? `${wishes.length} idee` : `${visible.length} di ${wishes.length}`}
+                  </span>
+                </div>
+              )}
+              <div className={styles.listScroll}>
               {loading && [0, 1, 2].map((i) => <div key={i} className={styles.skeleton} />)}
               {!loading && wishes.length > 0 && visible.length === 0 && (
                 <div className={styles.noMatch}>Nessuna idea corrisponde a "{query}"</div>
@@ -219,6 +216,7 @@ export default function WishBoard() {
                   );
                 })}
               </ul>
+              </div>
             </div>
             )}
 
@@ -227,7 +225,6 @@ export default function WishBoard() {
                 <WishMap items={mapItems} selectedId={selectedId} onSelect={(id) => select(id, "map")} onMap={setMap} />
                 {!editing && !loading && onMapCount === 0 && <div className={styles.mapHint}>Nessuna idea ha ancora un percorso</div>}
               </div>
-              {editing && <div ref={setProfileSlot} />}
             </div>
           </div>
         </>

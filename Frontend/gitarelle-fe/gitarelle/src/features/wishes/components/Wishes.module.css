@@ -31,16 +31,12 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 /* stessa intestazione delle altre sezioni (.section-head), con l'eyebrow menta invece che ambra */
 .head :global(.section-head) {
   margin-bottom: 0;
-}
-
-.head :global(.section-head) p {
-  max-width: 620px;
 }
 
 .head :global(.eyebrow) {
@@ -67,12 +63,31 @@
   align-items: start;
 }
 
-/* minmax(0, 1fr): un nome lungo non allarga la colonna oltre la sua larghezza */
+/* da tablet orizzontale in su la mappa arriva fino in fondo allo schermo (come lo storico),
+   identica sia con la lista sia durante la creazione di un'idea */
+@media (min-width: 769px) {
+  .layout {
+    --map-h: max(520px, calc(var(--screen-h) - 112px));
+  }
+}
+
+/* colonna alta quanto la mappa: filtro fisso in cima, sotto la lista (o il pannello) che scorre */
 .listCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  max-height: var(--map-h);
+}
+
+/* minmax(0, 1fr): un nome lungo non allarga la colonna oltre la sua larghezza */
+.listScroll {
+  flex: 1;
+  min-height: 0;
   display: grid;
+  align-content: start;
   grid-template-columns: minmax(0, 1fr);
   gap: 18px;
-  max-height: var(--map-h);
   overflow-y: auto;
   padding: 2px 6px 2px 0;
   scrollbar-width: thin;
@@ -289,12 +304,12 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 22px 0 16px;
+  padding-right: 6px;
 }
 
 .filter {
   flex: 1;
-  max-width: 420px;
+  min-width: 0;
   font: inherit;
   color: var(--text);
   padding: 10px 16px;
@@ -367,15 +382,9 @@
   min-width: 0;
 }
 
-/* la mappa si accorcia per lasciare il profilo altimetrico subito sotto */
+/* stessa altezza della vista con la lista: cambia solo il bordo */
 .layoutEditing .map {
-  height: clamp(300px, calc(var(--map-h) - 220px), 700px);
   border-color: var(--wish);
-}
-
-.layoutEditing .listCol {
-  max-height: none;
-  overflow: visible;
 }
 
 /* ricerca luoghi in alto, accanto ai pulsanti dello zoom */
@@ -388,12 +397,13 @@
   min-width: 180px;
 }
 
-/* comandi del disegno: tendina verticale a destra, sotto il pulsante delle viste (34px + margini),
-   semitrasparente per vedere la mappa sotto */
+/* comandi del disegno: tendina verticale a destra, sotto il selettore delle viste (il "top" lo calcola
+   WishEditor dall'altezza del selettore, aperto o chiuso), semitrasparente per vedere la mappa sotto */
 .drawPanel {
   position: absolute;
   z-index: 1000;
   top: 54px;
+  transition: top 0.18s ease, background 0.15s;
   right: 10px;
   width: 150px;
   display: grid;
@@ -405,7 +415,6 @@
   border: 1px solid var(--wish-border);
   box-shadow: var(--shadow);
   cursor: default;
-  transition: background 0.15s;
 }
 
 .drawPanel:hover {
@@ -542,9 +551,9 @@
 .planSide {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  padding: 16px;
+  padding: 14px;
   border-radius: var(--radius);
   background: var(--wish-surface);
   border: 1px solid var(--wish-border);
@@ -611,19 +620,44 @@
   color: var(--muted);
 }
 
-/* campi compatti: etichette piccole, meno padding */
+/* campi compatti: etichetta piccola a sinistra, campo accanto, poco padding */
+.compactFields {
+  display: grid;
+  gap: 6px;
+}
+
 .compactField {
-  gap: 4px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
 }
 
 .compactField > span {
   font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* nelle note l'etichetta resta allineata alla prima riga */
+.compactField:has(textarea) {
+  align-items: start;
+}
+
+.compactField:has(textarea) > span {
+  padding-top: 6px;
 }
 
 .compactField input,
 .compactField textarea {
-  padding: 7px 10px;
-  font-size: 14px;
+  width: 100%;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+
+.compactField textarea {
+  resize: vertical;
+  min-height: 34px;
 }
 
 /* percorso: riquadro a parte, staccato dai campi */
@@ -695,6 +729,17 @@
   color: var(--wish);
 }
 
+/* profilo durante il ricalcolo del percorso: resta quello di prima, spento e non interattivo */
+.profileLive,
+.profileBusy {
+  transition: opacity 0.2s;
+}
+
+.profileBusy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
 .routeStatus {
   margin: 0;
   font-size: 12px;
@@ -703,22 +748,6 @@
 
 .routeError {
   color: var(--danger);
-}
-
-.planProfile {
-  min-width: 0;
-}
-
-.planProfileEmpty {
-  display: grid;
-  place-items: center;
-  min-height: 72px;
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border-strong);
-  font-size: 13px;
-  color: var(--muted);
-  text-align: center;
 }
 
 .footerHint {
@@ -867,9 +896,6 @@
   }
   .listCol {
     max-height: 320px;
-  }
-  .filter {
-    max-width: none;
   }
 }
 

@@ -21,19 +21,18 @@
   color: var(--muted);
 }
 
-/* la tabella scorre da sola in orizzontale, mai la pagina */
+/* la tabella scorre da sola in orizzontale, mai la pagina. Ogni riga è una card, staccata dalle altre */
 .scroller {
   overflow-x: auto;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--surface);
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+  margin-top: -8px;
   font-size: 14px;
 }
 
@@ -42,26 +41,43 @@
   padding: 10px 12px;
   text-align: left;
   vertical-align: middle;
+}
+
+/* card: sfondo e bordo sulle celle, angoli tondi sulla prima e sull'ultima */
+.table td {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
 }
 
-.table tbody tr:last-child td {
-  border-bottom: none;
+.table td:first-child {
+  border-left: 3px solid var(--row-color, var(--border-strong));
+  border-radius: 14px 0 0 14px;
 }
 
-.table tbody tr:hover {
+.table td:last-child {
+  border-right: 1px solid var(--border);
+  border-radius: 0 14px 14px 0;
+}
+
+.table tbody tr:hover td {
   background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.table tbody tr:hover td:first-child {
+  border-left-color: var(--row-color, var(--border-strong));
 }
 
 .table th {
-  position: sticky;
-  top: 0;
-  font-size: 12px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--muted);
-  background: var(--surface);
   white-space: nowrap;
 }
 
@@ -102,9 +118,84 @@
 }
 
 .date {
-  white-space: nowrap;
-  color: var(--muted);
+  width: 1%;
+}
+
+/* come nella lista accanto alla mappa: giorno grande, mese e anno sotto */
+.dateBadge {
+  width: 52px;
+  display: grid;
+  justify-items: center;
+  padding: 5px 0;
+  border-radius: 10px;
+  line-height: 1.1;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
+}
+
+.dateBadge span {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.dateBadge small {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.dateBadge em {
+  font-size: 10px;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.folderChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.folderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+}
+
+.folderChip svg {
+  color: var(--muted);
+}
+
+.region,
+.metric {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.region {
+  font-size: 13px;
+}
+
+.region svg,
+.metric svg {
+  color: var(--muted);
+}
+
+.metric {
+  font-weight: 700;
 }
 
 .titleCell {
@@ -147,10 +238,18 @@
   width: 1%;
 }
 
+/* azioni discrete finché non si passa sulla riga */
 .tools {
   display: flex;
   gap: 4px;
   justify-content: flex-end;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+
+.table tbody tr:hover .tools,
+.tools:focus-within {
+  opacity: 1;
 }
 
 .toolBtn {

@@ -21,7 +21,7 @@ const LEGEND_MAX = 35;
 const LEGEND_TICKS: [string, number][] = [["piano", 0], ["10%", 10], ["20%", 20], ["30%+", 30]];
 
 // punto notevole da segnare sul profilo (es. le tappe di un percorso disegnato), con lo stesso numero e
-// colore del pin sulla mappa
+// colore del pin sulla mappa. Sta sull'asse x (distanza), con una guida fino alla linea del profilo
 export type ProfileMarker = { d: number; label: string; kind: "start" | "via" | "end" };
 
 const MARKER_FILL: Record<ProfileMarker["kind"], string> = { start: "var(--fresh)", via: "var(--text)", end: "var(--accent)" };
@@ -30,13 +30,22 @@ type Props = {
   profile: Profile;
   onHover?: (point: ProfilePoint | null) => void; // per mostrare il punto sulla mappa
   markers?: ProfileMarker[];
+  // con questi le tappe si cliccano e si trascinano lungo l'asse: al rilascio arriva il punto della
+  // traccia alla nuova distanza (chi usa il profilo ci sposta la tappa)
+  onMarkerClick?: (index: number) => void;
+  onMarkerMove?: (index: number, point: ProfilePoint) => void;
 };
+
+// tappa in trascinamento: distanza di partenza e attuale
+type Drag = { i: number; from: number; d: number };
 
 // Profilo altimetrico: quota (y) sulla distanza (x, km), area colorata secondo la pendenza.
 // Una sola serie: niente legenda di serie, solo la scala dei colori della pendenza sotto.
-export default function ElevationProfile({ profile, onHover, markers }: Props) {
+export default function ElevationProfile({ profile, onHover, markers, onMarkerClick, onMarkerMove }: Props) {
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  const movable = onMarkerMove != null;
   const wrapRef = useRef<HTMLDivElement>(null);
   const gradientId = useId();
 
@@ -49,7 +58,8 @@ export default function ElevationProfile({ profile, onHover, markers }: Props) {
   }, []);
 
   const { points, distance, minEle, maxEle } = profile;
-  const H = 200, top = 12, bottom = 24, left = 48, right = 12;
+  // con le tappe sull'asse serve un po' più di spazio sotto, tra i cerchietti e le etichette dei km
+  const H = markers?.length ? 210 : 200, top = 12, bottom = markers?.length ? 34 : 24, left = 48, right = 12;
   const innerW = Math.max(width - left - right, 0), innerH = H - top - bottom;
 
   // asse y: da poco sotto il minimo a poco sopra il massimo (un profilo non parte da quota 0)
@@ -85,19 +95,43 @@ export default function ElevationProfile({ profile, onHover, markers }: Props) {
     onHover?.(i == null ? null : points[i]);
   }
 
+  // i punti sono a passo costante: l'indice si ricava direttamente dalla distanza
+  const indexAt = (d: number) => Math.min(Math.max(Math.round((d / distance) * (points.length - 1)), 0), points.length - 1);
+
   const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (innerW <= 0) return;
     const mx = e.clientX - e.currentTarget.getBoundingClientRect().left;
-    const d = Math.min(Math.max((mx - left) / innerW, 0), 1) * distance;
-    // i punti sono a passo costante: l'indice si ricava direttamente
-    const i = Math.round((d / distance) * (points.length - 1));
-    setHoverIndex(Math.min(Math.max(i, 0), points.length - 1));
+    let d = Math.min(Math.max((mx - left) / innerW, 0), 1) * distance;
+    if (drag && markers) {
+      // una tappa non scavalca le vicine: resta tra la precedente e la successiva
+      const gap = distance * 0.005;
+      const lo = drag.i > 0 ? markers[drag.i - 1].d + gap : 0;
+      const hi = drag.i < markers.length - 1 ? markers[drag.i + 1].d - gap : distance;
+      d = Math.min(Math.max(d, lo), hi);
+      setDrag({ ...drag, d });
+    }
+    setHoverIndex(indexAt(d));
   };
+
+  function startDrag(e: React.PointerEvent, i: number, d: number) {
+    if (!movable && !onMarkerClick) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDrag({ i, from: d, d });
+  }
+
+  // rilascio: spostata di poco è un clic, altrimenti la tappa va al punto della traccia sotto il cursore
+  function endDrag() {
+    if (!drag) return;
+    setDrag(null);
+    if (movable && Math.abs(drag.d - drag.from) > distance * 0.003) onMarkerMove(drag.i, points[indexAt(drag.d)]);
+    else onMarkerClick?.(drag.i);
+  }
 
   const hp = hover != null ? points[hover] : null;
 
   // quota alla distanza d: i punti sono a passo costante, quindi l'indice si ricava direttamente
-  const eleAt = (d: number) => points[Math.min(Math.max(Math.round((d / distance) * (points.length - 1)), 0), points.length - 1)]?.ele ?? minEle;
+  const eleAt = (d: number) => points[indexAt(d)]?.ele ?? minEle;
   const summary = `Profilo altimetrico: ${fmt(km, 1)} km, quota da ${fmt(minEle)} a ${fmt(maxEle)} metri`;
   // la legenda campiona slopeColor ogni 0,5%, così mostra gli stessi passaggi netti del grafico
   const legendStops = Array.from({ length: LEGEND_MAX * 2 + 1 }, (_, i) => `${slopeColor(i / 2)} ${(i / 2 / LEGEND_MAX) * 100}%`);
@@ -118,7 +152,7 @@ export default function ElevationProfile({ profile, onHover, markers }: Props) {
             role="img"
             aria-label={summary}
             onPointerMove={onMove}
-            onPointerLeave={() => setHoverIndex(null)}
+            onPointerLeave={() => { if (!drag) setHoverIndex(null); }}
           >
             <defs>
               <linearGradient id={gradientId} gradientUnits="userSpaceOnUse" x1={left} x2={left + innerW} y1="0" y2="0">
@@ -144,14 +178,26 @@ export default function ElevationProfile({ profile, onHover, markers }: Props) {
               strokeLinejoin="round" strokeLinecap="round" />
             <path d={line} fill="none" stroke={`url(#${gradientId})`} strokeWidth={LINE_WIDTH} strokeLinejoin="round" strokeLinecap="round" />
 
-            {/* tappe: cerchietto numerato sulla linea, con una guida tenue fino all'asse */}
+            {/* tappe: cerchietto numerato sull'asse x, con una guida tenue fino alla linea del profilo */}
             {markers?.map((m, i) => {
-              const cx = x(Math.min(Math.max(m.d, 0), distance)), cy = y(eleAt(m.d));
+              const d = drag?.i === i ? drag.d : m.d;
+              const cx = x(Math.min(Math.max(d, 0), distance)), cy = y(eleAt(d)), base = top + innerH;
+              const active = drag?.i === i;
               return (
                 <g key={i} pointerEvents="none">
-                  <line x1={cx} x2={cx} y1={cy} y2={top + innerH} className={styles.markerGuide} />
-                  <circle cx={cx} cy={cy} r={9} fill={MARKER_FILL[m.kind]} className={styles.marker} />
-                  <text x={cx} y={cy} className={styles.markerLabel} textAnchor="middle" dominantBaseline="central">{m.label}</text>
+                  <line x1={cx} x2={cx} y1={cy} y2={base} className={`${styles.markerGuide} ${active ? styles.markerGuideActive : ""}`} />
+                  <circle cx={cx} cy={cy} r={3} fill={MARKER_FILL[m.kind]} className={styles.markerDot} />
+                  <g
+                    className={`${movable || onMarkerClick ? styles.markerHandle : ""} ${active ? styles.markerDragging : ""}`}
+                    pointerEvents={movable || onMarkerClick ? "all" : "none"}
+                    onPointerDown={(e) => startDrag(e, i, m.d)}
+                    onPointerUp={endDrag}
+                    onPointerCancel={() => setDrag(null)}
+                  >
+                    {movable && <title>{`Tappa ${m.label}: trascina per spostarla lungo il percorso`}</title>}
+                    <circle cx={cx} cy={base} r={active ? 11 : 9} fill={MARKER_FILL[m.kind]} className={styles.marker} />
+                    <text x={cx} y={base} className={styles.markerLabel} textAnchor="middle" dominantBaseline="central">{m.label}</text>
+                  </g>
                 </g>
               );
             })}
