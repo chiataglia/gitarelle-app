@@ -34,6 +34,7 @@ public final class ErrorMessageConstants {
     public static final String RATING_INVALID = "Il voto deve essere tra 1 e 5 stelle, anche a mezze stelle";
     public static final String EFFORT_OUT_OF_RANGE = "La fatica deve essere un voto da 1 a 10";
     public static final String SCENERY_OUT_OF_RANGE = "Il paesaggio deve essere un voto da 1 a 10";
+    public static final String SCORE_LABEL_TOO_LONG = "La descrizione del voto può avere al massimo 40 caratteri";
     public static final String TAGS_TOO_MANY = "Puoi scegliere al massimo 30 etichette";
     public static final String TAG_INVALID = "Ogni etichetta deve avere da 1 a 30 caratteri";
 
@@ -43,6 +44,7 @@ public final class ErrorMessageConstants {
     public static final String FOLDER_NAME_TOO_LONG = "Il nome della cartella può avere al massimo 60 caratteri";
     public static final String FOLDER_ALREADY_EXISTS = "Esiste già una cartella chiamata \"%s\"";
     public static final String TREK_IDS_REQUIRED = "Scegli almeno un'escursione";
+    public static final String COLOR_INVALID = "Il colore deve essere nel formato #rrggbb";
     public static final String FOLDER_TREKS_REQUIRED = "Scegli almeno un'escursione da aggiungere alla cartella";
 
     // Desideri (tour da fare)

@@ -3,6 +3,7 @@ package com.escursioni.gitarelle.services;
 import com.escursioni.gitarelle.dto.FolderRequestDto;
 import com.escursioni.gitarelle.dto.FolderResponseDto;
 import com.escursioni.gitarelle.dto.FolderTreksRequestDto;
+import com.escursioni.gitarelle.dto.TrekColorRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.entities.Folder;
 import com.escursioni.gitarelle.entities.Trek;
@@ -97,6 +98,16 @@ public class FolderService {
         Folder folder = findFolderById(id);
         List<Trek> treks = findTreks(requestDto.trekIds());
         treks.forEach(t -> t.getFolders().add(folder));
+        return toResponses(treks);
+    }
+
+    // Stesso colore per tutti i trek della cartella (anche quelli che stanno pure in altre cartelle)
+    @Transactional
+    public List<TrekResponseDto> colorTreks(Long id, TrekColorRequestDto requestDto) {
+        findFolderById(id);
+        List<Trek> treks = this.trekRepository.findAllByOwnerIdAndFolders_Id(this.currentUser.id(), id);
+        String color = requestDto.normalized();
+        treks.forEach(t -> t.setColor(color));
         return toResponses(treks);
     }
 

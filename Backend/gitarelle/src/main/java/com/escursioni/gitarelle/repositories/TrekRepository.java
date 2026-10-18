@@ -18,6 +18,10 @@ public interface TrekRepository extends JpaRepository<Trek, Long> {
     @EntityGraph(attributePaths = "folders")
     List<Trek> findAllByOwnerId(Long ownerId);
 
+    // trek di una cartella (per colorarli tutti insieme)
+    @EntityGraph(attributePaths = "folders")
+    List<Trek> findAllByOwnerIdAndFolders_Id(Long ownerId, Long folderId);
+
     Optional<Trek> findByIdAndOwnerId(Long id, Long ownerId);
 
     @EntityGraph(attributePaths = "folders")

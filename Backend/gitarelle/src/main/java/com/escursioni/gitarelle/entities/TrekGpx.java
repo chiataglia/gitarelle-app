@@ -16,8 +16,6 @@ public class TrekGpx {
     @JoinColumn(name = "trek_id")
     private Trek trek;
 
-    private String title;
-
     private String filename;
 
     private String contentType;
@@ -63,14 +61,6 @@ public class TrekGpx {
 
     public void setTrek(Trek trek) {
         this.trek = trek;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 
     public String getFilename() {

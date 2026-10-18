@@ -35,21 +35,21 @@ public class TrekGpxService {
 
     // transazione: anche la regione del trek (se ricavata dal gpx) si salva insieme al file
     @Transactional
-    public TrekGpx uploadGpxForTrek(Long trekId, String title, MultipartFile file) {
+    public TrekGpx uploadGpxForTrek(Long trekId, MultipartFile file) {
         checkNotEmpty(file);
         Trek trek = trekService.findTrekById(trekId);
         if (trekGpxRepository.existsById(trekId)) {
             throw new GpxAlreadyExistsException(trekId);
         }
-        return trekGpxRepository.save(buildGpx(trek, title, file));
+        return trekGpxRepository.save(buildGpx(trek, file));
     }
 
     // Crea trek e gpx insieme: se il salvataggio del gpx fallisce viene annullato anche il trek
     @Transactional
-    public TrekGpx createTrekWithGpx(CreateTrekRequestDto trekDto, String gpxTitle, MultipartFile file) {
+    public TrekGpx createTrekWithGpx(CreateTrekRequestDto trekDto, MultipartFile file) {
         checkNotEmpty(file);
         Trek trek = trekService.createTrek(trekDto);
-        return trekGpxRepository.save(buildGpx(trek, gpxTitle, file));
+        return trekGpxRepository.save(buildGpx(trek, file));
     }
 
     private void checkNotEmpty(MultipartFile file) {
@@ -58,10 +58,9 @@ public class TrekGpxService {
         }
     }
 
-    private TrekGpx buildGpx(Trek trek, String title, MultipartFile file) {
+    private TrekGpx buildGpx(Trek trek, MultipartFile file) {
         TrekGpx gpx = new TrekGpx();
         gpx.setTrek(trek);
-        gpx.setTitle(title);
         gpx.setFilename(file.getOriginalFilename());
         gpx.setContentType(file.getContentType());
         try {

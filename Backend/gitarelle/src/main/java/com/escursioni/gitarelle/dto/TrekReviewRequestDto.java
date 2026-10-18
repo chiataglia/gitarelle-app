@@ -16,6 +16,9 @@ public record TrekReviewRequestDto(
         @Max(value = 10, message = ErrorMessageConstants.EFFORT_OUT_OF_RANGE) Integer effort,
         @Min(value = 1, message = ErrorMessageConstants.SCENERY_OUT_OF_RANGE)
         @Max(value = 10, message = ErrorMessageConstants.SCENERY_OUT_OF_RANGE) Integer scenery,
+        // scritte proprie al posto di quelle automatiche dei voti (null o vuote = automatiche)
+        @Size(max = 40, message = ErrorMessageConstants.SCORE_LABEL_TOO_LONG) String effortLabel,
+        @Size(max = 40, message = ErrorMessageConstants.SCORE_LABEL_TOO_LONG) String sceneryLabel,
         Boolean dangerous, // null = non indicato
         @Size(max = 30, message = ErrorMessageConstants.TAGS_TOO_MANY)
         Set<@NotBlank(message = ErrorMessageConstants.TAG_INVALID) @Size(max = 30, message = ErrorMessageConstants.TAG_INVALID) String> tags, // facoltativo

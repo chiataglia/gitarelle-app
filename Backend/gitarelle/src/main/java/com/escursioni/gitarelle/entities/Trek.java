@@ -34,6 +34,10 @@ public class Trek {
     // regione italiana (o "Estero") calcolata dal punto o, se manca, dalla partenza del gpx: vedi RegionLocator
     private String region;
 
+    // colore della traccia sulla mappa ("#rrggbb"); null = colore automatico scelto dal frontend
+    @Column(length = 7)
+    private String color;
+
     // valutazione (tutto facoltativo): stelle da 1 a 5 a mezzi punti, fatica e paesaggio da 1 a 10,
     // tratti pericolosi sì/no (null = non indicato), etichette. Il testo della recensione sono le note
     private Double rating;
@@ -41,6 +45,13 @@ public class Trek {
     private Integer effort;
 
     private Integer scenery;
+
+    // scritta a parole del voto di fatica e paesaggio scelta dall'utente; null = quella automatica del frontend
+    @Column(length = 40)
+    private String effortLabel;
+
+    @Column(length = 40)
+    private String sceneryLabel;
 
     private Boolean dangerous;
 
@@ -130,6 +141,14 @@ public class Trek {
         this.region = region;
     }
 
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
     public Double getRating() {
         return rating;
     }
@@ -152,6 +171,22 @@ public class Trek {
 
     public void setScenery(Integer scenery) {
         this.scenery = scenery;
+    }
+
+    public String getEffortLabel() {
+        return effortLabel;
+    }
+
+    public void setEffortLabel(String effortLabel) {
+        this.effortLabel = effortLabel;
+    }
+
+    public String getSceneryLabel() {
+        return sceneryLabel;
+    }
+
+    public void setSceneryLabel(String sceneryLabel) {
+        this.sceneryLabel = sceneryLabel;
     }
 
     public Boolean getDangerous() {

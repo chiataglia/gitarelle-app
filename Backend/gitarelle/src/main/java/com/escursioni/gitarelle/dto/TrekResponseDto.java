@@ -19,9 +19,12 @@ public record TrekResponseDto(
         Double lat,
         Double lon,
         String region, // regione italiana o "Estero"; null se il trek non ha né punto né gpx
+        String color,  // colore della traccia ("#rrggbb"); null = automatico
         Double rating,      // valutazione: tutti null finché non si valuta
         Integer effort,
         Integer scenery,
+        String effortLabel,  // scritte proprie dei voti; null = automatiche
+        String sceneryLabel,
         Boolean dangerous,
         List<String> tags,
         Instant createdAt,
@@ -42,9 +45,12 @@ public record TrekResponseDto(
                 trek.getLat(),
                 trek.getLon(),
                 trek.getRegion(),
+                trek.getColor(),
                 trek.getRating(),
                 trek.getEffort(),
                 trek.getScenery(),
+                trek.getEffortLabel(),
+                trek.getSceneryLabel(),
                 trek.getDangerous(),
                 trek.getTags().stream().sorted().toList(),
                 trek.getCreatedAt(),

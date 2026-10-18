@@ -42,15 +42,15 @@ public class TrekGpxController {
     }
 
     @PostMapping(path = "/{id}/gpx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public TrekResponseDto upload(@PathVariable Long id, @RequestParam("file") MultipartFile file, @RequestParam(value = "title", required = false) String title) {
-        TrekGpx gpx = this.trekGpxService.uploadGpxForTrek(id, title, file);
+    public TrekResponseDto upload(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        TrekGpx gpx = this.trekGpxService.uploadGpxForTrek(id, file);
         return TrekResponseDto.from(gpx.getTrek(), TrekGpxMetricsRow.of(gpx));
     }
 
-    // Crea in un colpo solo trek + gpx. Parti multipart: "trek" (JSON), "file" (gpx), "gpxTitle" (opzionale)
+    // Crea in un colpo solo trek + gpx. Parti multipart: "trek" (JSON), "file" (gpx)
     @PostMapping(path = "/with-gpx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public TrekResponseDto createWithGpx(@Valid @RequestPart("trek") CreateTrekRequestDto trek, @RequestPart("file") MultipartFile file, @RequestParam(value = "gpxTitle", required = false) String gpxTitle) {
-        TrekGpx gpx = this.trekGpxService.createTrekWithGpx(trek, gpxTitle, file);
+    public TrekResponseDto createWithGpx(@Valid @RequestPart("trek") CreateTrekRequestDto trek, @RequestPart("file") MultipartFile file) {
+        TrekGpx gpx = this.trekGpxService.createTrekWithGpx(trek, file);
         return TrekResponseDto.from(gpx.getTrek(), TrekGpxMetricsRow.of(gpx));
     }
 }

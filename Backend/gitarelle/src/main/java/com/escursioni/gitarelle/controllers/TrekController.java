@@ -1,6 +1,7 @@
 package com.escursioni.gitarelle.controllers;
 
 import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
+import com.escursioni.gitarelle.dto.TrekColorRequestDto;
 import com.escursioni.gitarelle.dto.TrekIdsRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.dto.TrekReviewRequestDto;
@@ -61,6 +62,12 @@ public class TrekController {
     @PutMapping("/{id}/location")
     public TrekResponseDto updateLocation(@PathVariable Long id, @Valid @RequestBody UpdateTrekLocationRequestDto requestDto) {
         return this.trekService.updateLocation(id, requestDto);
+    }
+
+    // Colore della traccia sulla mappa (null = automatico)
+    @PutMapping("/{id}/color")
+    public TrekResponseDto updateColor(@PathVariable Long id, @Valid @RequestBody TrekColorRequestDto requestDto) {
+        return this.trekService.updateColor(id, requestDto);
     }
 
     // Valuta il trek: stelle, fatica, paesaggio, tratti pericolosi e recensione

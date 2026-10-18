@@ -1,6 +1,7 @@
 package com.escursioni.gitarelle.services;
 
 import com.escursioni.gitarelle.dto.CreateTrekRequestDto;
+import com.escursioni.gitarelle.dto.TrekColorRequestDto;
 import com.escursioni.gitarelle.dto.TrekResponseDto;
 import com.escursioni.gitarelle.dto.TrekReviewRequestDto;
 import com.escursioni.gitarelle.dto.UpdateTrekLocationRequestDto;
@@ -98,6 +99,8 @@ public class TrekService {
         Trek trek = new Trek();
         trek.setOwner(this.currentUser.reference());
         applyFields(trek, requestDto);
+        if (requestDto.review() != null) applyReview(trek, requestDto.review());
+        if (requestDto.color() != null) trek.setColor(requestDto.color().toLowerCase());
         return this.trekRepository.save(trek);
     }
 
@@ -152,20 +155,38 @@ public class TrekService {
         return toResponse(this.trekRepository.save(trek));
     }
 
+    @Transactional
+    public TrekResponseDto updateColor(Long id, TrekColorRequestDto requestDto) {
+        Trek trek = findTrekById(id);
+        trek.setColor(requestDto.normalized());
+        return toResponse(this.trekRepository.save(trek));
+    }
+
     // Valutazione del trek: sostituisce stelle, fatica, paesaggio, pericoli, etichette e testo (le note)
     @Transactional
     public TrekResponseDto updateReview(Long id, TrekReviewRequestDto requestDto) {
         Trek trek = findTrekById(id);
+        applyReview(trek, requestDto);
+        return toResponse(this.trekRepository.save(trek));
+    }
+
+    private void applyReview(Trek trek, TrekReviewRequestDto requestDto) {
         trek.setRating(requestDto.rating());
         trek.setEffort(requestDto.effort());
         trek.setScenery(requestDto.scenery());
+        // la scritta propria ha senso solo con un voto
+        trek.setEffortLabel(requestDto.effort() != null ? blankToNull(requestDto.effortLabel()) : null);
+        trek.setSceneryLabel(requestDto.scenery() != null ? blankToNull(requestDto.sceneryLabel()) : null);
         trek.setDangerous(requestDto.dangerous());
         trek.getTags().clear();
         if (requestDto.tags() != null) {
             requestDto.tags().forEach(tag -> trek.getTags().add(tag.trim()));
         }
         trek.setNotes(requestDto.notes());
-        return toResponse(this.trekRepository.save(trek));
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
     }
 
     private TrekResponseDto toResponse(Trek trek) {
