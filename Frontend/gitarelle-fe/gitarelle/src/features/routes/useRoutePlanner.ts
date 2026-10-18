@@ -51,6 +51,8 @@ export function useRoutePlanner() {
   const add = (p: LatLngLiteral) => change(addAt === "start" ? [p, ...waypoints] : [...waypoints, p]);
   const move = (i: number, p: LatLngLiteral) => change(waypoints.map((w, k) => (k === i ? p : w)));
   const remove = (i: number) => change(waypoints.filter((_, k) => k !== i));
+  // scambia due tappe (es. trascinando una sull'altra nel profilo): il percorso si ricalcola nel nuovo ordine
+  const swap = (a: number, b: number) => change(waypoints.map((w, k) => (k === a ? waypoints[b] : k === b ? waypoints[a] : w)));
   const clear = () => change([]);
 
   // l'arrivo coincide già con la partenza (anello chiuso o andata e ritorno)
@@ -126,7 +128,7 @@ export function useRoutePlanner() {
   const waypointDistances = useMemo(() => distancesOf(waypoints, segments), [waypoints, segments]);
 
   return {
-    waypoints, addAt, setAddAt, add, move, remove, clear, undo, canUndo: history.length > 0,
+    waypoints, addAt, setAddAt, add, move, remove, swap, clear, undo, canUndo: history.length > 0,
     returnSameWay, endAtStart, endsAtStart,
     pairs, states, loading, error, complete, line, track, waypointDistances,
   };

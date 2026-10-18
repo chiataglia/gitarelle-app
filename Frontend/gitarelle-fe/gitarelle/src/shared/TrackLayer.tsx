@@ -50,6 +50,8 @@ export default function TrackLayer({ gpx, trackKey, color, label, fit = true, da
         key={`${trackKey}-${stroke}`} // GeoJSON di react-leaflet non si aggiorna se cambia solo "data" o lo stile
         data={gpx.geojson}
         eventHandlers={eventHandlers}
+        // cliccabile: il click resta alla traccia e non arriva anche alla mappa sotto (che magari lo usa per altro)
+        bubblingMouseEvents={!onClick}
         style={(feature) => {
           if (isLine(feature)) {
             return { color: stroke, weight: 3.5, opacity: 0.95, lineCap: "round", lineJoin: "round", dashArray };
@@ -66,6 +68,7 @@ export default function TrackLayer({ gpx, trackKey, color, label, fit = true, da
           data={gpx.geojson}
           filter={(feature) => isLine(feature)}
           eventHandlers={eventHandlers}
+          bubblingMouseEvents={false}
           style={{ color: stroke, weight: 20, opacity: 0, lineCap: "round", lineJoin: "round" }}
         >
           {label && <Tooltip sticky>{label}</Tooltip>}

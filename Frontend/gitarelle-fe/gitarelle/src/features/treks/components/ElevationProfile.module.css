@@ -98,6 +98,19 @@
   stroke-width: 2.5;
 }
 
+/* tappa su cui si sta rilasciando un'altra: le due si scambieranno */
+.markerSwapTarget .marker {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.swapRing {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+}
+
 .markerGuideActive {
   stroke: var(--accent);
   stroke-opacity: 0.8;

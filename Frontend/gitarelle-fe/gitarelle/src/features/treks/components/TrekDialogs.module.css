@@ -159,6 +159,80 @@
   }
 }
 
+/* righe condensate della scheda: più dati affiancati, ognuno icona + valore */
+.facts > .factLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 28px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fact > svg {
+  flex: none;
+  margin-top: 4px;
+  color: var(--fresh);
+}
+
+.factGrow {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* il valore modificabile prende solo lo spazio che serve, se non è l'unico della riga */
+.fact .factValue {
+  width: auto;
+  flex: 1;
+  margin: -2px -8px;
+}
+
+.fact .inlineInput {
+  min-width: 150px;
+  margin: -3px 0;
+}
+
+/* cartelle: icona in alto, verde se il trek ne ha */
+.folderBtnOn {
+  color: var(--fresh);
+}
+
+.folderBtnOpen {
+  color: var(--accent);
+  background: rgba(127, 216, 160, 0.14);
+}
+
+.folderEditor {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.folderEditorTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.folderEditorTitle > svg {
+  color: var(--fresh);
+}
+
 /* dislivello positivo e negativo sulla stessa riga: il secondo porta la sua icona */
 .pair {
   display: flex;
@@ -266,6 +340,46 @@ textarea.inlineInput {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* ---------- scheda come pannello (accanto alla mappa a schermo intero dello storico) ---------- */
+.panel {
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px 20px 22px;
+  color: var(--text);
+  background: linear-gradient(180deg, var(--surface), var(--bg-2));
+  border-left: 1px solid var(--border-strong);
+  animation: panelIn 0.22s ease-out;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.panelActions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* una colonna sola: info, valutazione e profilo uno sotto l'altro */
+.editLayoutPanel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
 }
 
 /* ---------- eliminazione ---------- */

@@ -22,6 +22,7 @@ import { errorMessage } from "../../../shared/api";
 import { trekColor } from "../../../shared/map";
 import { CollapseIcon, DistanceIcon, ElevationIcon, ExpandIcon, EyeIcon, FolderIcon, TrashIcon } from "../../../shared/icons";
 import { useFullscreen } from "../../../shared/useFullscreen";
+import type { ProfilePoint } from "../../../shared/elevation";
 
 const pointOf = (t: Trek): LatLngLiteral | null =>
   t.lat != null && t.lon != null ? { lat: t.lat, lng: t.lon } : null;
@@ -300,6 +301,41 @@ export default function TrekList() {
 
   // mappa allargabile a schermo intero
   const full = useFullscreen<HTMLDivElement>();
+  // con la mappa la scheda non è un dialog ma un pannello: a schermo intero galleggia a destra sopra la mappa,
+  // altrimenti prende il posto della lista (che si allarga, e la mappa si restringe). Il dialog resta per l'elenco
+  const detailShown = viewing != null && mode === "map";
+  const split = detailShown && full.isFullscreen;
+  const docked = detailShown && !full.isFullscreen;
+  // punto del profilo altimetrico della scheda sotto il mouse, mostrato sulla mappa grande
+  const [profilePoint, setProfilePoint] = useState<{ id: Trek["id"]; point: ProfilePoint } | null>(null);
+  // la scheda copre parte della mappa: la mappa inquadra le tracce nella parte rimasta libera
+  const panelBox = useRef<HTMLDivElement>(null);
+
+  // apre la scheda accanto alla mappa, che inquadra la traccia intera
+  function openDetail(id: Trek["id"]) {
+    setViewingId(id);
+    focusOn(id);
+  }
+
+  // click su un pin o una traccia
+  function openFromMap(key: string) {
+    const t = comparedTreks.find((x) => String(x.id) === key);
+    if (t) openDetail(t.id);
+  }
+
+  const detailPanel = viewing && (
+    <TrekViewDialog
+      key={viewing.id}
+      panel
+      trek={viewing}
+      gpx={viewing.hasGpx ? gpxTracks.trackOf(viewing.id) : null}
+      color={trekColor(viewing)}
+      onClose={() => setViewingId(null)}
+      onEdit={() => setEditingId(viewing.id)}
+      onDelete={() => setDeletingIds([viewing.id])}
+      onProfileHover={(p) => setProfilePoint(p ? { id: viewing.id, point: p } : null)}
+    />
+  );
 
   // intestazione compatta (titolo, modalità, cartelle in due righe): lo spazio va alla mappa
   return (
@@ -354,8 +390,13 @@ export default function TrekList() {
         />
         </>
       ) : (
-      <div className={`${styles.layout} ${styles.layoutCompare} ${foldersShown ? styles.layoutFoldersOpen : ""}`}>
-        <div className={styles.listCol}>
+      <div className={`${styles.layout} ${styles.layoutCompare} ${foldersShown ? styles.layoutFoldersOpen : ""} ${docked ? styles.layoutDetail : ""}`}>
+        <div className={`${styles.listCol} ${docked ? styles.listColDetail : ""}`}>
+          {docked ? (
+            <div className={styles.panelDocked}>
+              {detailPanel}
+            </div>
+          ) : (<>
           {loading && (
             <div className={styles.skeletons}>
               {[0, 1, 2].map((i) => <div key={i} className={styles.skeleton} />)}
@@ -505,7 +546,7 @@ export default function TrekList() {
                         +
                       </button>
                     )}
-                    <button type="button" className={styles.toolBtn} onClick={() => setViewingId(t.id)} title="Dettagli" aria-label={`Dettagli di ${t.title}`}>
+                    <button type="button" className={styles.toolBtn} onClick={() => openDetail(t.id)} title="Dettagli" aria-label={`Dettagli di ${t.title}`}>
                       <EyeIcon />
                     </button>
                   </div>
@@ -513,9 +554,11 @@ export default function TrekList() {
               );
             })}
           </ul>
+          </>)}
         </div>
 
-        <div ref={full.ref} className={`map-frame ${styles.mapCol} ${full.fallback ? styles.mapColFull : ""}`}>
+        <div ref={full.ref} className={`map-frame ${styles.mapCol} ${full.fallback ? styles.mapColFull : ""} ${split ? styles.mapColSplit : ""}`}>
+          <div className={styles.mapArea}>
           <button
             type="button"
             className={`gt-map-btn ${styles.fullBtn}`}
@@ -530,19 +573,29 @@ export default function TrekList() {
             tracks={trackItems}
             fitKey={String(fitSeq)}
             onViewChange={setView}
-            onSelect={(key) => setViewingId(comparedTreks.find((t) => String(t.id) === key)?.id ?? null)}
+            onSelect={openFromMap}
             onAdd={addingTo ? (key) => {
               const t = comparedTreks.find((x) => String(x.id) === key);
               if (t) addToFolder(t);
             } : undefined}
             focus={focus}
             onFocus={focusOnKeys}
+            // un click sulla mappa fuori dalle tracce chiude la scheda accanto
+            onMapClick={detailShown ? () => setViewingId(null) : undefined}
+            highlight={detailShown && profilePoint?.id === viewing.id ? profilePoint.point : null}
+            cover={split ? panelBox : undefined}
           />
           {compareItems.length === 0 && visibleTreks.length > 0 && (
             <div className={styles.mapHint}>
               {allPicked
                 ? "Nessuna escursione da mostrare sulla mappa"
                 : picked.size === 0 ? "Nessuna escursione selezionata" : "Le escursioni selezionate non hanno punto né traccia"}
+            </div>
+          )}
+          </div>
+          {split && (
+            <div ref={panelBox} className={styles.panelFloat}>
+              {detailPanel}
             </div>
           )}
         </div>
@@ -577,7 +630,7 @@ export default function TrekList() {
       </div>
       )}
 
-      {viewing && (
+      {viewing && !detailShown && (
         <TrekViewDialog
           trek={viewing}
           gpx={viewing.hasGpx ? gpxTracks.trackOf(viewing.id) : null}

@@ -206,6 +206,65 @@
   height: 100dvh;
 }
 
+/* area della mappa dentro il riquadro: i pulsanti e gli avvisi sopra la mappa si posizionano su di lei */
+.mapArea {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+}
+
+/* schermo intero con la scheda di un trek aperta: la scheda galleggia sopra la mappa, a destra,
+   staccata dai bordi così attorno si vede ancora la mappa */
+.mapColSplit {
+  --panel-w: min(620px, calc(50% - 16px));
+  --panel-gap: 16px;
+}
+
+.panelFloat {
+  position: absolute;
+  z-index: 1100; /* sopra i controlli di leaflet (1000) */
+  top: var(--panel-gap);
+  right: var(--panel-gap);
+  bottom: var(--panel-gap);
+  width: var(--panel-w);
+  display: flex;
+}
+
+.panelFloat > aside {
+  flex: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-2) 92%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+}
+
+/* i controlli a destra della mappa (viste, attribuzione) si spostano a sinistra della scheda */
+.mapColSplit :global(.gt-layers),
+.mapColSplit :global(.leaflet-right) {
+  right: calc(var(--panel-w) + var(--panel-gap));
+}
+
+/* telefono: la scheda galleggia nella parte bassa, la mappa resta visibile sopra */
+@media (max-width: 768px) {
+  .mapColSplit {
+    --panel-gap: 8px;
+  }
+  .panelFloat {
+    top: auto;
+    left: var(--panel-gap);
+    width: auto;
+    height: 58%;
+  }
+  .mapColSplit :global(.gt-layers),
+  .mapColSplit :global(.leaflet-right) {
+    right: 0;
+  }
+  .mapColSplit :global(.gt-layers) {
+    right: 10px;
+  }
+}
+
 /* sotto i pulsanti +/- di leaflet (81px) e la casetta (34px + 6px); l'aspetto è .gt-map-btn in index.css */
 .fullBtn {
   position: absolute;
@@ -364,6 +423,38 @@
 .segmented .segActive:hover {
   background: var(--accent);
   color: var(--accent-ink);
+}
+
+/* scheda di un trek al posto della lista: la colonna si allarga e la mappa si restringe. Senza animazione
+   all'apertura: la mappa deve avere subito la misura finale per inquadrare la traccia */
+.layoutCompare.layoutDetail {
+  --list-col: clamp(440px, 38vw, 640px);
+  transition: none;
+}
+
+.listColDetail {
+  max-height: none;
+  overflow: visible;
+}
+
+.panelDocked {
+  display: flex;
+  height: var(--map-h);
+  min-width: 0;
+}
+
+.panelDocked > aside {
+  flex: 1;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* telefono: scheda sopra la mappa, alta quanto il contenuto */
+@media (max-width: 768px) {
+  .panelDocked {
+    height: auto;
+  }
 }
 
 /* lista, mappa e, a destra, le cartelle: chiuse sono solo un'icona, aperte un riquadro alto quanto serve */

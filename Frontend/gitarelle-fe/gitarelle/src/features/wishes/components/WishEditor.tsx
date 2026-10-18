@@ -261,6 +261,7 @@ export default function WishEditor({ wish, map, mapOverlay, onClose, onSaved }: 
                     <div className={styles.routeHelp}>
                       <p><b>Clic</b> sulla mappa: aggiunge una tappa {planner.addAt === "start" ? "prima della partenza" : "dopo l'arrivo"}.</p>
                       <p><b>Trascina</b> una tappa per spostarla, <b>clic</b> per toglierla.</p>
+                      <p>Sul profilo, <b>trascina</b> una tappa sopra un'altra per scambiarle.</p>
                       <p className={styles.routeCredit}>Percorsi con BRouter, dati © OpenStreetMap</p>
                     </div>
                   )}
@@ -386,6 +387,11 @@ export default function WishEditor({ wish, map, mapOverlay, onClose, onSaved }: 
               onMarkerMove={drawing && !recalculating ? (i, p) => {
                 planner.move(i, { lat: p.lat, lng: p.lng });
                 setMoved({ i, d: p.d });
+                setProfilePoint(null);
+              } : undefined}
+              // una tappa rilasciata sopra un'altra: le due si scambiano
+              onMarkerSwap={drawing && !recalculating ? (a, b) => {
+                planner.swap(a, b);
                 setProfilePoint(null);
               } : undefined}
             />

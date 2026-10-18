@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useComune } from "../../../shared/useComune";
 import { CircleMarker, MapContainer, Marker, useMapEvents } from "react-leaflet";
 import type { LatLngLiteral } from "leaflet";
 import type { Trek, TrekPayload } from "../types";
@@ -30,6 +31,10 @@ type Props = {
   onClose: () => void;
   onEdit: () => void;    // modifica completa (anche punto sulla mappa e cartelle insieme)
   onDelete: () => void;
+  // pannello a destra della mappa a schermo intero dello storico (invece del dialog): la traccia
+  // la mostra già la mappa grande, quindi qui niente mappa (resta solo per scegliere il punto dei trek senza gpx)
+  panel?: boolean;
+  onProfileHover?: (point: ProfilePoint | null) => void; // punto del profilo sotto il mouse, per la mappa grande
 };
 
 // campi modificabili con un click (distanza e dislivello vengono dal gpx; le note si scrivono nella valutazione)
@@ -41,7 +46,7 @@ function PickPoint({ onPick }: { onPick: (pos: LatLngLiteral) => void }) {
 }
 
 // Scheda di un trek: si legge tutto e si corregge un campo alla volta cliccandoci sopra
-export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDelete }: Props) {
+export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDelete, panel, onProfileHover }: Props) {
   const { folders, upsertTrek } = useTreks();
   const folderNames = folders.filter((f) => trek.folderIds.includes(f.id)).map((f) => f.name).join(", ");
   const savedPoint = trek.lat != null && trek.lon != null ? { lat: trek.lat, lng: trek.lon } : null;
@@ -60,6 +65,11 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
   // profilo altimetrico dal gpx; il punto sotto il mouse nel grafico compare anche sulla mappa
   const profile = useMemo(() => (gpx ? computeProfile(gpx) : null), [gpx]);
   const [profilePoint, setProfilePoint] = useState<ProfilePoint | null>(null);
+  const hoverProfile = (p: ProfilePoint | null) => {
+    setProfilePoint(p);
+    onProfileHover?.(p);
+  };
+  const showMap = !panel || !trek.hasGpx;
   const elevationLoss = gpx ? trackStats(gpx).loss : null;
   // dal gpx registrato (soste escluse) se ha gli orari, altrimenti stimato
   const duration = gpx ? trackDuration(gpx) : null;
@@ -180,53 +190,24 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     }
   }
 
-  // content: valore in sola lettura con un aspetto proprio (dislivelli affiancati, tempo con il dettaglio)
-  const rows: { field?: Field; label: string; icon: ReactNode; text: string | null; editor?: ReactNode; value?: string; content?: ReactNode }[] = [
-    {
-      field: "trekDate", label: "Data", icon: <CalendarIcon />,
-      text: trek.trekDate ? formatDate(trek.trekDate) : null, value: trek.trekDate ?? "",
-      editor: <input type="date" {...editorProps} />,
-    },
-    {
-      field: "folderIds", label: "Cartelle", icon: <FolderIcon />,
-      text: folderNames || null, value: "",
-      // ogni cartella si salva appena accesa o spenta (un trek può stare in più cartelle)
-      editor: (
-        <div className={styles.inlineFolders}>
-          <FolderSelect label={null} value={trek.folderIds} onChange={(folderIds) => save({ folderIds })} disabled={saving} />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(null)} disabled={saving}>Fatto</button>
-        </div>
-      ),
-    },
-    {
-      field: "amichetti", label: "Amichetti", icon: <PeopleIcon />,
-      text: trek.amichetti || null, value: trek.amichetti ?? "",
-      editor: <input {...editorProps} placeholder="Chi c'era?" />,
-    },
-    // calcolata dal backend dal punto (o dalla partenza del gpx): non si modifica a mano
-    { label: "Regione", icon: <PinIcon />, text: trek.region },
-    { label: "Distanza", icon: <DistanceIcon />, text: trek.distanceMeters != null ? formatKm(trek.distanceMeters) : null },
-    // positivo e negativo affiancati, il verso lo dice l'icona (il negativo non è salvato nel backend: si calcola dal gpx già scaricato)
-    {
-      label: "Dislivello positivo e negativo", icon: <ElevationIcon />, text: trek.elevationGainMeters != null ? formatGain(trek.elevationGainMeters) : null,
-      content: trek.elevationGainMeters != null && (
-        <span className={styles.pair}>
-          <span>{formatGain(trek.elevationGainMeters)}</span>
-          {elevationLoss != null && <span title="Dislivello negativo"><ElevationLossIcon />{formatGain(elevationLoss)}</span>}
-        </span>
-      ),
-    },
-    {
-      label: duration ? trackDurationLabel(duration) : "Tempo di percorrenza", icon: <ClockIcon />, text: duration ? formatTrackDuration(duration) : null,
-      // con gli orari del gps si apre il dettaglio (partenza, arrivo, soste e confronto con la stima): è cliccabile solo il tempo
-      content: duration?.recorded && (
-        <button type="button" className={styles.detailLink} onClick={() => setShowDuration(true)} aria-label={`${formatTrackDuration(duration)}: vedi il dettaglio`}>
-          {formatTrackDuration(duration)}
-          <EyeIcon size={14} />
-        </button>
-      ),
-    },
-  ];
+  // comune del punto di partenza (partenza del gpx o, senza traccia, il punto sulla mappa); finché non arriva
+  // (o se il servizio non risponde) si mostra la regione calcolata dal backend
+  const startPoint = trek.hasGpx ? gpx?.info.start ?? null : savedPoint;
+  const comune = useComune(startPoint);
+  const place = comune ?? trek.region;
+
+  // un dato su una riga condensata: icona + valore (l'etichetta resta nel tooltip e per gli screen reader)
+  const fact = (label: string, icon: ReactNode, content: ReactNode, grow = false) => (
+    <div className={`${styles.fact} ${grow ? styles.factGrow : ""}`} title={label}>
+      {icon}
+      <span className="sr-only">{label}</span>
+      {content}
+    </div>
+  );
+  const readOnly = (text: string | null | undefined) => (
+    <span className={text ? styles.readOnly : styles.factEmpty}>{text ?? "—"}</span>
+  );
+  const hasMetrics = trek.distanceMeters != null || trek.elevationGainMeters != null || duration != null;
 
   const heading = editing === "title" ? (
     <input {...editorProps} className={`${styles.inlineInput} ${styles.titleInput}`} aria-label="Titolo" />
@@ -237,42 +218,73 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
     </button>
   );
 
-  return (
-    <Modal
-      title={trek.title}
-      heading={heading}
-      onClose={onClose}
-      wide
-      // modifica completa ed eliminazione: icone accanto alla ✕, si aprono sopra la scheda
-      actions={
-        <>
-          <button type="button" className="modal-icon-btn" onClick={onEdit} disabled={saving} title="Modifica" aria-label="Modifica escursione">
-            <PencilIcon size={15} />
-          </button>
-          <button type="button" className="modal-icon-btn is-danger" onClick={onDelete} disabled={saving} title="Elimina" aria-label="Elimina escursione">
-            <TrashIcon size={15} />
-          </button>
-        </>
-      }
-    >
-      <div className={styles.editLayout}>
+  // cartelle, modifica completa ed eliminazione: icone accanto alla ✕ (modifica ed eliminazione si aprono sopra la scheda)
+  const actions = (
+    <>
+      <button
+        type="button"
+        className={`modal-icon-btn ${folderNames ? styles.folderBtnOn : ""} ${editing === "folderIds" ? styles.folderBtnOpen : ""}`}
+        onClick={() => (editing === "folderIds" ? setEditing(null) : start("folderIds", ""))}
+        disabled={saving && editing !== "folderIds"}
+        title={folderNames ? `Cartelle: ${folderNames}` : "Aggiungi a una cartella"}
+        aria-label={folderNames ? `Cartelle: ${folderNames}` : "Aggiungi a una cartella"}
+        aria-expanded={editing === "folderIds"}
+      >
+        <FolderIcon size={15} />
+      </button>
+      <button type="button" className="modal-icon-btn" onClick={onEdit} disabled={saving} title="Modifica" aria-label="Modifica escursione">
+        <PencilIcon size={15} />
+      </button>
+      <button type="button" className="modal-icon-btn is-danger" onClick={onDelete} disabled={saving} title="Elimina" aria-label="Elimina escursione">
+        <TrashIcon size={15} />
+      </button>
+    </>
+  );
+
+  const body = (
+    <>
+      <div className={`${styles.editLayout} ${panel ? styles.editLayoutPanel : ""}`}>
         <div className={styles.fields}>
-          <dl className={styles.facts}>
-            {rows.map((r) => (
-              <div key={r.label} title={r.label}>
-                <dt>{r.icon}<span className="sr-only">{r.label}</span></dt>
-                <dd>
-                  {r.field && editing === r.field
-                    ? r.editor
-                    : r.field
-                      ? editable(r.field, r.text, r.value ?? "", r.label)
-                      : r.content
-                        ? r.content
-                        : <span className={r.text ? styles.readOnly : styles.factEmpty}>{r.text ?? "—"}</span>}
-                </dd>
+          {/* cartelle: si aprono dall'icona in alto; ogni cartella si salva appena accesa o spenta */}
+          {editing === "folderIds" && (
+            <div className={styles.folderEditor}>
+              <span className={styles.folderEditorTitle}><FolderIcon size={15} />Cartelle</span>
+              <div className={styles.inlineFolders}>
+                <FolderSelect label={null} value={trek.folderIds} onChange={(folderIds) => save({ folderIds })} disabled={saving} />
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditing(null)} disabled={saving}>Fatto</button>
               </div>
-            ))}
-          </dl>
+            </div>
+          )}
+          {/* dati condensati: data e luogo, amichetti, distanza con dislivelli e tempo */}
+          <div className={styles.facts}>
+            <div className={styles.factLine}>
+              {fact("Data", <CalendarIcon />, editing === "trekDate"
+                ? <input type="date" {...editorProps} />
+                : editable("trekDate", trek.trekDate ? formatDate(trek.trekDate) : null, trek.trekDate ?? "", "Data"))}
+              {/* calcolato dalla partenza: non si modifica a mano */}
+              {fact(comune ? "Comune di partenza" : "Regione", <PinIcon />, readOnly(place), true)}
+            </div>
+            <div className={styles.factLine}>
+              {fact("Amichetti", <PeopleIcon />, editing === "amichetti"
+                ? <input {...editorProps} placeholder="Chi c'era?" />
+                : editable("amichetti", trek.amichetti || null, trek.amichetti ?? "", "Amichetti"), true)}
+            </div>
+            {hasMetrics && (
+              <div className={styles.factLine}>
+                {trek.distanceMeters != null && fact("Distanza", <DistanceIcon />, readOnly(formatKm(trek.distanceMeters)))}
+                {/* il negativo non è salvato nel backend: si calcola dal gpx già scaricato */}
+                {trek.elevationGainMeters != null && fact("Dislivello positivo", <ElevationIcon />, readOnly(formatGain(trek.elevationGainMeters)))}
+                {elevationLoss != null && fact("Dislivello negativo", <ElevationLossIcon />, readOnly(formatGain(elevationLoss)))}
+                {/* con gli orari del gps si apre il dettaglio (partenza, arrivo, soste e confronto con la stima) */}
+                {duration && fact(trackDurationLabel(duration), <ClockIcon />, duration.recorded ? (
+                  <button type="button" className={styles.detailLink} onClick={() => setShowDuration(true)} aria-label={`${formatTrackDuration(duration)}: vedi il dettaglio`}>
+                    {formatTrackDuration(duration)}
+                    <EyeIcon size={14} />
+                  </button>
+                ) : readOnly(formatTrackDuration(duration)))}
+              </div>
+            )}
+          </div>
           {/* valutazione: si compila in un dialog a parte, qui solo il riepilogo. Una volta data resta solo
               la valutazione con la matita per modificarla; prima, titolo e pulsante "Valuta" */}
           <section className={`${reviewStyles.summary} ${reviewed ? reviewStyles.summaryDone : ""}`} aria-label="Valutazione">
@@ -315,7 +327,7 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
           {error && <div className="alert alert-error">{error}</div>}
         </div>
 
-        <div className={`map-frame ${styles.map}`}>
+        {showMap && <div className={`map-frame ${styles.map}`}>
           {/* l'altezza la dà il riquadro (min-height): qui la si eredita, come in MapPicker */}
           <div style={{ height: "100%", minHeight: "inherit", width: "100%", cursor: picking ? "crosshair" : undefined }}>
             {/* con la traccia si parte già dal suo centro (non dalla partenza); FitWhenSized poi sistema lo zoom */}
@@ -354,13 +366,13 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
               </>
             )}
           </div>}
-        </div>
+        </div>}
 
         {/* profilo altimetrico a tutta larghezza sotto info e mappa */}
         {trek.hasGpx && (
           <div className={`${styles.full} ${styles.profile}`}>
             {profile ? (
-              <ElevationProfile profile={profile} onHover={setProfilePoint} />
+              <ElevationProfile profile={profile} onHover={hoverProfile} />
             ) : (
               <p className={styles.hint}>
                 {gpx ? "Questo GPX non contiene le quote: il profilo altimetrico non è disponibile." : "Caricamento del profilo altimetrico…"}
@@ -371,6 +383,27 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
       </div>
       {showDuration && gpx && <DurationDialog gpx={gpx} onClose={() => setShowDuration(false)} />}
       {showReview && <ReviewDialog trek={trek} onClose={() => setShowReview(false)} />}
+    </>
+  );
+
+  if (panel) {
+    return (
+      <aside className={styles.panel} aria-label={trek.title}>
+        <header className={styles.panelHeader}>
+          {heading}
+          <div className={styles.panelActions}>
+            {actions}
+            <button type="button" className="modal-icon-btn" onClick={onClose} aria-label="Chiudi" title="Chiudi">✕</button>
+          </div>
+        </header>
+        {body}
+      </aside>
+    );
+  }
+
+  return (
+    <Modal title={trek.title} heading={heading} onClose={onClose} wide actions={actions}>
+      {body}
     </Modal>
   );
 }

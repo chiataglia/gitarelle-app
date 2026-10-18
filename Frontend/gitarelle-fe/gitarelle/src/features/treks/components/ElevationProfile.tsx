@@ -34,14 +34,19 @@ type Props = {
   // traccia alla nuova distanza (chi usa il profilo ci sposta la tappa)
   onMarkerClick?: (index: number) => void;
   onMarkerMove?: (index: number, point: ProfilePoint) => void;
+  // con questo una tappa rilasciata sopra un'altra si scambia con lei
+  onMarkerSwap?: (a: number, b: number) => void;
 };
 
-// tappa in trascinamento: distanza di partenza e attuale
-type Drag = { i: number; from: number; d: number };
+// tappa in trascinamento: distanza di partenza e attuale, e la tappa su cui si trova (da scambiare)
+type Drag = { i: number; from: number; d: number; target: number | null };
+
+// distanza (px) entro cui una tappa trascinata "aggancia" un'altra per lo scambio
+const SWAP_SNAP_PX = 14;
 
 // Profilo altimetrico: quota (y) sulla distanza (x, km), area colorata secondo la pendenza.
 // Una sola serie: niente legenda di serie, solo la scala dei colori della pendenza sotto.
-export default function ElevationProfile({ profile, onHover, markers, onMarkerClick, onMarkerMove }: Props) {
+export default function ElevationProfile({ profile, onHover, markers, onMarkerClick, onMarkerMove, onMarkerSwap }: Props) {
   const [width, setWidth] = useState(0);
   const [hover, setHover] = useState<number | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -103,12 +108,28 @@ export default function ElevationProfile({ profile, onHover, markers, onMarkerCl
     const mx = e.clientX - e.currentTarget.getBoundingClientRect().left;
     let d = Math.min(Math.max((mx - left) / innerW, 0), 1) * distance;
     if (drag && markers) {
-      // una tappa non scavalca le vicine: resta tra la precedente e la successiva
-      const gap = distance * 0.005;
-      const lo = drag.i > 0 ? markers[drag.i - 1].d + gap : 0;
-      const hi = drag.i < markers.length - 1 ? markers[drag.i + 1].d - gap : distance;
-      d = Math.min(Math.max(d, lo), hi);
-      setDrag({ ...drag, d });
+      // sopra un'altra tappa: la si aggancia (al rilascio le due si scambiano)
+      let target: number | null = null;
+      if (onMarkerSwap) {
+        let best = SWAP_SNAP_PX;
+        markers.forEach((m, j) => {
+          const gap = Math.abs(x(m.d) - mx);
+          if (j !== drag.i && gap <= best) {
+            best = gap;
+            target = j;
+          }
+        });
+      }
+      if (target != null) {
+        d = markers[target].d;
+      } else {
+        // altrimenti una tappa non scavalca le vicine: resta tra la precedente e la successiva
+        const gap = distance * 0.005;
+        const lo = drag.i > 0 ? markers[drag.i - 1].d + gap : 0;
+        const hi = drag.i < markers.length - 1 ? markers[drag.i + 1].d - gap : distance;
+        d = Math.min(Math.max(d, lo), hi);
+      }
+      setDrag({ ...drag, d, target });
     }
     setHoverIndex(indexAt(d));
   };
@@ -117,14 +138,16 @@ export default function ElevationProfile({ profile, onHover, markers, onMarkerCl
     if (!movable && !onMarkerClick) return;
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDrag({ i, from: d, d });
+    setDrag({ i, from: d, d, target: null });
   }
 
-  // rilascio: spostata di poco è un clic, altrimenti la tappa va al punto della traccia sotto il cursore
+  // rilascio: sopra un'altra tappa le due si scambiano; spostata di poco è un clic, altrimenti la tappa
+  // va al punto della traccia sotto il cursore
   function endDrag() {
     if (!drag) return;
     setDrag(null);
-    if (movable && Math.abs(drag.d - drag.from) > distance * 0.003) onMarkerMove(drag.i, points[indexAt(drag.d)]);
+    if (drag.target != null) onMarkerSwap?.(drag.i, drag.target);
+    else if (movable && Math.abs(drag.d - drag.from) > distance * 0.003) onMarkerMove(drag.i, points[indexAt(drag.d)]);
     else onMarkerClick?.(drag.i);
   }
 
@@ -179,22 +202,26 @@ export default function ElevationProfile({ profile, onHover, markers, onMarkerCl
             <path d={line} fill="none" stroke={`url(#${gradientId})`} strokeWidth={LINE_WIDTH} strokeLinejoin="round" strokeLinecap="round" />
 
             {/* tappe: cerchietto numerato sull'asse x, con una guida tenue fino alla linea del profilo */}
-            {markers?.map((m, i) => {
+            {/* quella trascinata si disegna per ultima, sopra le altre (anche sopra quella con cui si scambia) */}
+            {markers?.map((m, i) => ({ m, i })).sort((a, b) => Number(drag?.i === a.i) - Number(drag?.i === b.i)).map(({ m, i }) => {
               const d = drag?.i === i ? drag.d : m.d;
               const cx = x(Math.min(Math.max(d, 0), distance)), cy = y(eleAt(d)), base = top + innerH;
               const active = drag?.i === i;
+              const swapTarget = drag?.target === i;
               return (
                 <g key={i} pointerEvents="none">
                   <line x1={cx} x2={cx} y1={cy} y2={base} className={`${styles.markerGuide} ${active ? styles.markerGuideActive : ""}`} />
                   <circle cx={cx} cy={cy} r={3} fill={MARKER_FILL[m.kind]} className={styles.markerDot} />
                   <g
-                    className={`${movable || onMarkerClick ? styles.markerHandle : ""} ${active ? styles.markerDragging : ""}`}
+                    className={`${movable || onMarkerClick ? styles.markerHandle : ""} ${active ? styles.markerDragging : ""} ${swapTarget ? styles.markerSwapTarget : ""}`}
                     pointerEvents={movable || onMarkerClick ? "all" : "none"}
                     onPointerDown={(e) => startDrag(e, i, m.d)}
                     onPointerUp={endDrag}
                     onPointerCancel={() => setDrag(null)}
                   >
-                    {movable && <title>{`Tappa ${m.label}: trascina per spostarla lungo il percorso`}</title>}
+                    {movable && <title>{`Tappa ${m.label}: trascina per spostarla lungo il percorso${onMarkerSwap ? ", o su un'altra tappa per scambiarle" : ""}`}</title>}
+                    {/* anello attorno alla tappa con cui si scambierà */}
+                    {swapTarget && <circle cx={cx} cy={base} r={15} className={styles.swapRing} />}
                     <circle cx={cx} cy={base} r={active ? 11 : 9} fill={MARKER_FILL[m.kind]} className={styles.marker} />
                     <text x={cx} y={base} className={styles.markerLabel} textAnchor="middle" dominantBaseline="central">{m.label}</text>
                   </g>

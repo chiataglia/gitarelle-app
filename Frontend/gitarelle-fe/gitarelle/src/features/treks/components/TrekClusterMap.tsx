@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
-import { MapContainer, useMap } from "react-leaflet";
+import { useEffect, useRef, type RefObject } from "react";
+import { CircleMarker, MapContainer, useMap } from "react-leaflet";
 import L, { type LatLngLiteral } from "leaflet";
 import "leaflet.markercluster";
 import "leaflet.markercluster/dist/MarkerCluster.css";
 import { TILE_MAX_ZOOM, isPinAddClick, pinAddIconFor, pinIconFor } from "../../../shared/map";
 import type { ParsedGpx } from "../../../shared/gpx";
+import { slopeColor, type ProfilePoint } from "../../../shared/elevation";
 import TrackLayer from "../../../shared/TrackLayer";
 import InvalidateOnResize from "../../../shared/InvalidateOnResize";
 import ItalyView from "../../../shared/ItalyView";
@@ -129,7 +130,7 @@ export type FocusRequest = { keys: string[]; seq: number };
 
 // volo sulle tracce dei trek richiesti (o sui loro punti, se la traccia non c'è). Se qualche traccia è
 // ancora in download si aspetta che arrivi, così il volo è uno solo e finisce già sulle tracce intere
-function FocusOn({ items, focus }: { items: ClusterItem[]; focus: FocusRequest | null }) {
+function FocusOn({ items, focus, cover }: { items: ClusterItem[]; focus: FocusRequest | null; cover?: RefObject<HTMLElement | null> }) {
   const map = useMap();
   const targets = focus != null ? items.filter((i) => focus.keys.includes(i.key)) : [];
   const ready = targets.length > 0 && targets.every((i) => !i.trackPending);
@@ -142,9 +143,21 @@ function FocusOn({ items, focus }: { items: ClusterItem[]; focus: FocusRequest |
       else if (i.point) bounds.extend(i.point);
     }
     if (!bounds.isValid()) return;
+    // il riquadro può aver appena cambiato misura (es. la lista si è allargata per la scheda): senza, si
+    // inquadrerebbe sulla misura vecchia (il ResizeObserver di InvalidateOnResize arriva dopo)
+    map.invalidateSize({ pan: false });
+    // margine extra dal lato coperto da un riquadro sopra la mappa (la scheda a destra, o in basso sul telefono)
+    let right = 0, bottom = 0;
+    const box = cover?.current?.getBoundingClientRect();
+    if (box) {
+      const frame = map.getContainer().getBoundingClientRect();
+      if (box.left > frame.left + frame.width / 3) right = frame.right - box.left;
+      else bottom = frame.bottom - box.top;
+    }
+    const opts = { paddingTopLeft: [40, 40] as L.PointTuple, paddingBottomRight: [40 + right, 40 + bottom] as L.PointTuple, duration: 1.1, easeLinearity: 0.2 };
     // un punto solo (nessuna traccia): zoom fisso, se no si andrebbe allo zoom massimo
-    if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.flyTo(bounds.getCenter(), 14, { duration: 1.1, easeLinearity: 0.2 });
-    else map.flyToBounds(bounds, { padding: [40, 40], duration: 1.1, easeLinearity: 0.2 });
+    if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.flyToBounds(bounds.pad(0), { ...opts, maxZoom: 14 });
+    else map.flyToBounds(bounds, opts);
   }, [map, focus, ready]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -170,6 +183,24 @@ function ViewWatcher({ onChange }: { onChange: (view: MapView) => void }) {
   return null;
 }
 
+// click sulla mappa vuota (non su pin, gruppi o tracce, che il click lo tengono per sé);
+// leaflet non lo manda dopo un trascinamento, quindi spostare la mappa non conta
+function MapClick({ onClick }: { onClick: () => void }) {
+  const map = useMap();
+  const handler = useRef(onClick);
+  useEffect(() => {
+    handler.current = onClick;
+  });
+  useEffect(() => {
+    const fire = () => handler.current();
+    map.on("click", fire);
+    return () => {
+      map.off("click", fire);
+    };
+  }, [map]);
+  return null;
+}
+
 type Props = {
   items: ClusterItem[];
   tracks: ClusterItem[]; // sottoinsieme di items di cui disegnare la traccia
@@ -179,13 +210,17 @@ type Props = {
   onAdd?: (key: string) => void;   // modalità "Aggiungi": "+" accanto a ogni pin per metterlo nella cartella
   focus: FocusRequest | null;      // trek da inquadrare
   onFocus: (keys: string[]) => void; // click su un gruppo: inquadrare i suoi trek
+  highlight?: ProfilePoint | null;  // punto del profilo altimetrico sotto il mouse nella scheda aperta
+  onMapClick?: () => void;          // click sulla mappa fuori da pin e tracce
+  cover?: RefObject<HTMLElement | null>; // riquadro sopra la mappa: le tracce si inquadrano nella parte libera
 };
 
 // Mappa dello storico: numeri per zona da lontano, tracce da vicino
-export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, onAdd, focus, onFocus }: Props) {
+export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, onSelect, onAdd, focus, onFocus, highlight, cover, onMapClick }: Props) {
   return (
     <MapContainer center={[42.5, 12.5]} zoom={6} maxZoom={TILE_MAX_ZOOM} style={{ height: "100%", width: "100%" }}>
       <ViewWatcher onChange={onViewChange} />
+      {onMapClick && <MapClick onClick={onMapClick} />}
       <MapLayers />
       <ItalyView />
       <HomeButton />
@@ -193,8 +228,15 @@ export default function TrekClusterMap({ items, tracks, fitKey, onViewChange, on
       {tracks.map((i) => i.gpx && (
         <TrackLayer key={i.key} gpx={i.gpx} trackKey={i.key} color={i.color} label={i.label} fit={false} pin={false} onClick={() => onSelect(i.key)} />
       ))}
+      {highlight && (
+        <CircleMarker
+          center={[highlight.lat, highlight.lng]}
+          radius={7}
+          pathOptions={{ color: "#fff", weight: 3, fillColor: slopeColor(highlight.slope), fillOpacity: 1 }}
+        />
+      )}
       <FitView items={items} fitKey={fitKey} />
-      <FocusOn items={items} focus={focus} />
+      <FocusOn items={items} focus={focus} cover={cover} />
       <InvalidateOnResize />
     </MapContainer>
   );
