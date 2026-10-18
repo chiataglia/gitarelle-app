@@ -1,0 +1,124 @@
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.swatch {
+  position: relative;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.on,
+.on:hover {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.chip.on {
+  border-color: var(--text);
+  outline: none;
+}
+
+.custom {
+  background: conic-gradient(#e5484d, #f2a541, #f5d90a, #12a594, #3e8ef7, #8e4ec6, #d6409f, #e5484d);
+  overflow: hidden;
+}
+
+/* l'input nativo copre il pallino, invisibile: il click apre il selettore del sistema */
+.custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.picker button:disabled,
+.custom:has(input:disabled) {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---------- ColorButton: pallino che apre il pannellino ---------- */
+.buttonBox {
+  position: relative;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 38px;
+  min-height: 34px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.button:hover,
+.button:focus-visible,
+.buttonOpen {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.buttonDot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  right: 0;
+  width: max-content;
+  max-width: min(330px, 85vw);
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}

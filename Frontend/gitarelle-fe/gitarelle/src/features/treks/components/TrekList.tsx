@@ -9,6 +9,8 @@ import TrekDeleteDialog from "./TrekDeleteDialog";
 import TrekTable from "./TrekTable";
 import FolderBar from "./FolderBar";
 import TrekFilters from "./TrekFilters";
+import TrekSortSelect from "./TrekSortSelect";
+import { DEFAULT_SORT, sortTreks, type TrekSort } from "../trekSort";
 import { NO_FILTERS, applyTrekFilters, filterLabels, type TrekFilterState } from "../trekFilters";
 import { useTreks } from "../TreksContext";
 import { startTrekDrag } from "../trekDrag";
@@ -17,7 +19,7 @@ import { addTreksToFolder, fetchGpxText } from "../api";
 import styles from "./TrekList.module.css";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
 import { errorMessage } from "../../../shared/api";
-import { colorForId } from "../../../shared/map";
+import { trekColor } from "../../../shared/map";
 import { CollapseIcon, DistanceIcon, ElevationIcon, ExpandIcon, EyeIcon, FolderIcon, TrashIcon } from "../../../shared/icons";
 import { useFullscreen } from "../../../shared/useFullscreen";
 
@@ -27,8 +29,6 @@ const pointOf = (t: Trek): LatLngLiteral | null =>
 // map: lista e mappa con i percorsi (click sul trek → zoom, sul titolo → scheda modificabile);
 // all: elenco completo senza mappa
 type Mode = "map" | "all";
-
-const colorOf = colorForId;
 
 export default function TrekList() {
   const { treks, folders, loading, error, upsertTreks } = useTreks();
@@ -54,9 +54,11 @@ export default function TrekList() {
         ? treks.filter((t) => t.folderIds.length === 0)
         : treks.filter((t) => t.folderIds.includes(folderFilter));
 
-  // filtri (regione, amici, anno, dislivello, distanza), da combinare con la cartella
+  // filtri (nome, regione, amici, anno, dislivello, distanza), da combinare con la cartella;
+  // l'ordine scelto vale per la lista accanto alla mappa e per l'elenco
   const [filters, setFilters] = useState<TrekFilterState>(NO_FILTERS);
-  const visibleTreks = applyTrekFilters(folderTreks, filters);
+  const [sort, setSort] = useState<TrekSort>(DEFAULT_SORT);
+  const visibleTreks = sortTreks(applyTrekFilters(folderTreks, filters), sort);
   const filtersSummary = filterLabels(filters).join(" · ");
 
   // trek selezionati nella lista (clic, Ctrl/⌘+clic, Maiusc+clic): la mappa mostra solo loro e si
@@ -81,9 +83,10 @@ export default function TrekList() {
 
   // zoom e area inquadrata dalla mappa
   const [view, setView] = useState<MapView | null>(null);
-  // zoom dalla lista o dall'elenco: la mappa vola sulla traccia di quel trek
+  // zoom dalla lista, dall'elenco o da un gruppo sulla mappa: la mappa vola sulle tracce di quei trek
   const [focus, setFocus] = useState<FocusRequest | null>(null);
-  const focusOn = (id: Trek["id"]) => setFocus((prev) => ({ key: String(id), seq: (prev?.seq ?? 0) + 1 }));
+  const focusOnKeys = (keys: string[]) => setFocus((prev) => ({ keys, seq: (prev?.seq ?? 0) + 1 }));
+  const focusOn = (id: Trek["id"]) => focusOnKeys([String(id)]);
   const zoomedIn = view != null && view.zoom >= TRACK_ZOOM;
   const inView = (p: LatLngLiteral | null | undefined) => zoomedIn && p != null && view.bounds.pad(0.5).contains(p);
 
@@ -102,9 +105,9 @@ export default function TrekList() {
     ? visibleTreks.filter((t) => t.hasGpx && (!pointOf(t) || (onMap(t) && inView(pointOf(t))))).map((t) => t.id)
     : [];
   if (viewing?.hasGpx && !gpxIds.includes(viewing.id)) gpxIds.push(viewing.id);
-  // anche quella del trek su cui si fa zoom, così la mappa inquadra la traccia intera
-  const focused = mode === "map" && focus ? visibleTreks.find((t) => String(t.id) === focus.key) : undefined;
-  if (focused?.hasGpx && !gpxIds.includes(focused.id)) gpxIds.push(focused.id);
+  // anche quelle dei trek su cui si fa zoom, così la mappa inquadra le tracce intere
+  const focused = mode === "map" && focus ? visibleTreks.filter((t) => focus.keys.includes(String(t.id))) : [];
+  for (const t of focused) if (t.hasGpx && !gpxIds.includes(t.id)) gpxIds.push(t.id);
   const gpxTracks = useGpxTracks(gpxIds, fetchGpxText);
 
   // dove sta un trek sulla mappa: il suo punto o, se manca, la partenza del gpx
@@ -197,7 +200,7 @@ export default function TrekList() {
     return {
       key: String(t.id),
       label: t.title,
-      color: colorOf(t.id),
+      color: trekColor(t),
       gpx,
       point: pointOf(t) ?? gpx?.info.start ?? null,
       trackPending: t.hasGpx && gpxTracks.isLoading(t.id),
@@ -320,6 +323,7 @@ export default function TrekList() {
         </div>
         {treks.length > 0 && (
           <div className={styles.headTools}>
+            <TrekSortSelect value={sort} onChange={setSort} />
             <TrekFilters treks={folderTreks} value={filters} onChange={changeFilters} />
             <div className={styles.segmented} role="tablist" aria-label="Modalità di visualizzazione">
               {([["map", "Mappa"], ["all", "Elenco"]] as const).map(([m, label]) => (
@@ -340,6 +344,8 @@ export default function TrekList() {
         </div>
         <TrekTable
           treks={visibleTreks}
+          sort={sort}
+          onSortChange={setSort}
           folders={folders}
           onView={(t) => setViewingId(t.id)}
           onEdit={(t) => setEditingId(t.id)}
@@ -430,7 +436,7 @@ export default function TrekList() {
             {listedTreks.map((t) => {
               const nothingToShow = !t.hasGpx && !pointOf(t);
               const isPicked = isPickedTrek(t);
-              const compareColor = onMap(t) && !nothingToShow ? colorOf(t.id) : undefined;
+              const compareColor = onMap(t) && !nothingToShow ? trekColor(t) : undefined;
               const active = compareColor != null;
               return (
                 <li
@@ -530,6 +536,7 @@ export default function TrekList() {
               if (t) addToFolder(t);
             } : undefined}
             focus={focus}
+            onFocus={focusOnKeys}
           />
           {compareItems.length === 0 && visibleTreks.length > 0 && (
             <div className={styles.mapHint}>
@@ -574,7 +581,7 @@ export default function TrekList() {
         <TrekViewDialog
           trek={viewing}
           gpx={viewing.hasGpx ? gpxTracks.trackOf(viewing.id) : null}
-          color={colorOf(viewing.id)}
+          color={trekColor(viewing)}
           onClose={() => setViewingId(null)}
           // modifica ed eliminazione si aprono sopra la scheda, che resta (e si aggiorna) sotto
           onEdit={() => setEditingId(viewing.id)}

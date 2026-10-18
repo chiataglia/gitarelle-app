@@ -52,54 +52,187 @@
   color: var(--accent-ink);
 }
 
+/* form compatto: meno spazio tra i campi e campi più bassi del solito */
 .form {
   display: grid;
-  gap: 14px;
+  gap: 10px;
   align-content: start;
+  padding: 16px;
 }
 
-.row {
+.form input:not([type="checkbox"]):not([type="color"]),
+.form select,
+.form textarea {
+  padding: 7px 11px;
+}
+
+/* titolo, data e colore sulla stessa riga */
+.titleRow {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  gap: 10px;
 }
 
-/* zona gpx compatta in cima al form (stile base in GpxViewer.module.css) */
+/* zona gpx: una riga in cima al form, alta uguale vuota (.dropzone) e con il file caricato (.gpxBox),
+   così il form non salta. Stile tutto qui (non quello grande di GpxViewer) */
+.dropzone,
+.gpxBox {
+  box-sizing: border-box;
+  height: 40px;
+}
+
 .dropzone {
-  min-height: 0;
-  grid-auto-flow: column;
-  place-content: center start;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  text-align: left;
+  gap: 10px;
+  padding: 0 10px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--muted);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dropzone:hover,
+.dropzoneActive {
+  border-color: var(--accent);
+  background: rgba(242, 165, 65, 0.06);
+}
+
+.dropzone:focus-within {
+  outline: 2px solid rgba(242, 165, 65, 0.5);
+  outline-offset: 2px;
+}
+
+.dropText {
+  flex: 1;
+  min-width: 0;
 }
 
 .dropzone strong {
-  font-size: 15px;
-}
-
-.dropzone small {
-  display: block;
-  margin-top: 2px;
-  font-size: 12px;
+  color: var(--text);
 }
 
 .dropIcon {
   display: grid;
   place-items: center;
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  font-size: 17px;
+  font-size: 12px;
   color: var(--accent-ink);
   background: var(--accent);
 }
 
-.gpxBox {
+.dropInfo {
   display: grid;
-  gap: 10px;
+  place-items: center;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  cursor: help;
+}
+
+/* gpx caricato: nome del file e scelta "nuova / collega" sulla stessa riga */
+.gpxBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 10px;
+  font-size: 13px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: rgba(242, 165, 65, 0.06);
+}
+
+.gpxFile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gpxFile b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gpxRemove {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  font: inherit;
+  font-size: 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.gpxRemove:hover {
+  background: var(--danger);
+  color: var(--accent-ink);
+}
+
+.gpxMode {
+  flex: none;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.gpxMode > button {
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.gpxMode > button:hover {
+  color: var(--text);
+}
+
+.gpxMode > .gpxModeOn,
+.gpxMode > .gpxModeOn:hover {
+  color: var(--accent-ink);
+  background: var(--accent);
+}
+
+/* pulsanti in basso a destra */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.footer > .btn,
+.footer > button {
+  min-width: 120px;
 }
 
 @media (max-width: 1024px) {
@@ -115,11 +248,33 @@
 }
 
 @media (max-width: 480px) {
-  .row {
+  .titleRow {
     grid-template-columns: 1fr;
   }
 }
 
 .map :global(.leaflet-container) {
   cursor: crosshair;
+}
+
+/* valutazione facoltativa in fondo al form, separata dai dati del trek */
+.reviewSection {
+  display: grid;
+  gap: 10px;
+  padding-top: 10px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
+
+.reviewSection > h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.reviewSection > h3 > small {
+  margin-left: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
 }

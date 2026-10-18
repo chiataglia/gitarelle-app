@@ -2,6 +2,7 @@ import type { Trek } from "./types";
 
 // Filtri dello storico, da combinare con la cartella. Range vuoti = nessun limite
 export type TrekFilterState = {
+  query: string;       // parte del nome del trek
   region: string | null;
   friends: string[];   // almeno uno di questi amici
   year: number | null;
@@ -10,7 +11,7 @@ export type TrekFilterState = {
 };
 
 export const NO_FILTERS: TrekFilterState = {
-  region: null, friends: [], year: null, gainMin: null, gainMax: null, distMin: null, distMax: null,
+  query: "", region: null, friends: [], year: null, gainMin: null, gainMax: null, distMin: null, distMax: null,
 };
 
 // "Marco, Giulia e Luca" → ["Marco", "Giulia", "Luca"]
@@ -23,12 +24,17 @@ export function friendsOf(t: Trek): string[] {
 
 export const yearOf = (t: Trek) => (t.trekDate ? Number(t.trekDate.slice(0, 4)) : null);
 
+// per cercare senza badare a maiuscole e accenti ("citta" trova "Città")
+export const searchable = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("it-IT");
+
 const inRange = (v: number | null, min: number | null, max: number | null) =>
   (min == null && max == null) || (v != null && (min == null || v >= min) && (max == null || v <= max));
 
 export function applyTrekFilters(treks: Trek[], f: TrekFilterState): Trek[] {
   const friends = f.friends.map((x) => x.toLowerCase());
+  const q = searchable(f.query.trim());
   return treks.filter((t) =>
+    (!q || searchable(t.title).includes(q)) &&
     (f.region == null || t.region === f.region) &&
     (f.year == null || yearOf(t) === f.year) &&
     (friends.length === 0 || friendsOf(t).some((x) => friends.includes(x.toLowerCase()))) &&
@@ -41,6 +47,7 @@ export function filterLabels(f: TrekFilterState): string[] {
   const range = (min: number | null, max: number | null, unit: string) =>
     min != null && max != null ? `${min}–${max} ${unit}` : min != null ? `≥ ${min} ${unit}` : `≤ ${max} ${unit}`;
   return [
+    f.query.trim() && `“${f.query.trim()}”`,
     f.region,
     f.friends.length > 0 && `con ${f.friends.join(", ")}`,
     f.year != null && String(f.year),

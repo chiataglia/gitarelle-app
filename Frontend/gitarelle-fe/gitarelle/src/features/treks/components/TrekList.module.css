@@ -27,8 +27,10 @@
 
 .headTools {
   display: flex;
+  flex-wrap: wrap; /* ordina, filtri e modalità vanno a capo sugli schermi stretti */
+  justify-content: flex-end;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
 }
 
 /* elenco: cartelle sopra la tabella (lì non c'è la mappa accanto) */
@@ -69,7 +71,7 @@
   margin: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  gap: 10px;
   animation: listIn 0.32s ease-out;
 }
 

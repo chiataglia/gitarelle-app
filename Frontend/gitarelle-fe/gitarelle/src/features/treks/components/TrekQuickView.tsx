@@ -3,7 +3,7 @@ import type { Trek } from "../types";
 import { useTreks } from "../TreksContext";
 import { fetchGpxText } from "../api";
 import { useGpxTracks } from "../../../shared/useGpxTracks";
-import { colorForId } from "../../../shared/map";
+import { trekColor } from "../../../shared/map";
 import TrekViewDialog from "./TrekViewDialog";
 import TrekEditDialog from "./TrekEditDialog";
 import TrekDeleteDialog from "./TrekDeleteDialog";
@@ -22,7 +22,7 @@ export default function TrekQuickView({ trekId, onClose }: { trekId: Trek["id"];
       <TrekViewDialog
         trek={trek}
         gpx={trek.hasGpx ? gpxTracks.trackOf(trek.id) : null}
-        color={colorForId(trek.id)}
+        color={trekColor(trek)}
         onClose={onClose}
         onEdit={() => setEditing(true)}
         onDelete={() => setDeleting(true)}

@@ -1,60 +1,37 @@
-import { useState } from "react";
 import type { Folder, Trek } from "../types";
+import { SORT_OPTIONS, type TrekSort, type TrekSortKey } from "../trekSort";
 import styles from "./TrekTable.module.css";
 import { formatDate, formatGain, formatKm } from "../../../shared/format";
-import { colorForId } from "../../../shared/map";
+import { trekColor } from "../../../shared/map";
 import { DistanceIcon, ElevationIcon, EyeIcon, FolderIcon, PencilIcon, PinIcon, TrashIcon } from "../../../shared/icons";
-
-type SortKey = "date" | "title" | "distance" | "gain";
-type Sort = { key: SortKey; desc: boolean };
-
-// valore su cui ordinare; i trek senza dato finiscono sempre in fondo
-const sortValue = (t: Trek, key: SortKey): string | number | null => {
-  switch (key) {
-    case "date": return t.trekDate ?? null;
-    case "title": return t.title.toLocaleLowerCase("it-IT");
-    case "distance": return t.distanceMeters;
-    case "gain": return t.elevationGainMeters;
-  }
-};
 
 const hasPlace = (t: Trek) => t.hasGpx || (t.lat != null && t.lon != null);
 
 type Props = {
-  treks: Trek[];
+  treks: Trek[]; // già filtrati (anche per nome) e ordinati dallo storico
   folders: Folder[];
+  sort: TrekSort;                       // lo stesso "Ordina per" dello storico:
+  onSortChange: (sort: TrekSort) => void; // il click su un'intestazione lo cambia
   onView: (t: Trek) => void;
   onEdit: (t: Trek) => void;
   onDelete: (t: Trek) => void;
   onShowOnMap: (t: Trek) => void; // passa alla mappa e inquadra il trek
 };
 
-// Elenco completo dello storico, senza mappa: ricerca e ordinamento su tutti i trek della cartella
-export default function TrekTable({ treks, folders, onView, onEdit, onDelete, onShowOnMap }: Props) {
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<Sort>({ key: "date", desc: true });
-
-  const q = query.trim().toLocaleLowerCase("it-IT");
-  const filtered = q
-    ? treks.filter((t) => `${t.title} ${t.amichetti ?? ""} ${t.notes ?? ""}`.toLocaleLowerCase("it-IT").includes(q))
-    : treks;
-  const rows = [...filtered].sort((a, b) => {
-    const va = sortValue(a, sort.key);
-    const vb = sortValue(b, sort.key);
-    if (va == null || vb == null) return va == null ? (vb == null ? 0 : 1) : -1;
-    const cmp = typeof va === "number" && typeof vb === "number" ? va - vb : String(va).localeCompare(String(vb), "it-IT");
-    return sort.desc ? -cmp : cmp;
-  });
+// Elenco completo dello storico, senza mappa: tutti i trek della cartella (con i filtri), ordinabili per colonna
+export default function TrekTable({ treks, folders, sort, onSortChange, onView, onEdit, onDelete, onShowOnMap }: Props) {
+  const rows = treks;
 
   // cartelle del trek, nello stesso ordine (alfabetico) della barra delle cartelle
   const foldersOf = (t: Trek) => folders.filter((f) => t.folderIds.includes(f.id));
 
   // click sulla stessa colonna inverte il verso; su una nuova parte dal verso più utile
-  function sortBy(key: SortKey) {
-    setSort((prev) => prev.key === key ? { key, desc: !prev.desc } : { key, desc: key !== "title" });
+  function sortBy(key: TrekSortKey) {
+    const desc = SORT_OPTIONS.find((o) => o.key === key)?.desc ?? true;
+    onSortChange(sort.key === key ? { key, desc: !sort.desc } : { key, desc });
   }
 
-  const header = (key: SortKey, label: string, className?: string) => (
+  const header = (key: TrekSortKey, label: string, className?: string) => (
     <th className={className} aria-sort={sort.key === key ? (sort.desc ? "descending" : "ascending") : "none"}>
       <button type="button" className={styles.sortBtn} onClick={() => sortBy(key)}>
         {label}
@@ -65,22 +42,8 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.searchRow}>
-        <input
-          type="search"
-          className={styles.search}
-          placeholder="Cerca per titolo, compagni o note..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          aria-label="Cerca nello storico"
-        />
-        <span className={styles.count}>
-          {q ? `${rows.length} di ${treks.length}` : `${treks.length} escursioni`}
-        </span>
-      </div>
-
       {rows.length === 0 ? (
-        <div className={styles.empty}>{q ? "Nessuna escursione corrisponde alla ricerca." : "Nessuna escursione in questa cartella."}</div>
+        <div className={styles.empty}>Nessuna escursione con questi filtri in questa cartella.</div>
       ) : (
         <div className={styles.scroller}>
           <table className={styles.table}>
@@ -98,7 +61,7 @@ export default function TrekTable({ treks, folders, onView, onEdit, onDelete, on
             <tbody>
               {rows.map((t) => (
                 // il colore è quello della traccia sulla mappa
-                <tr key={t.id} style={{ "--row-color": colorForId(t.id) } as React.CSSProperties}>
+                <tr key={t.id} style={{ "--row-color": trekColor(t) } as React.CSSProperties}>
                   <td className={styles.date}>
                     <div className={styles.dateBadge}>
                       <span>{formatDate(t.trekDate, { day: "2-digit" }) || "–"}</span>

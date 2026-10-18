@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import type { Trek } from "./features/treks/types";
 import { useTreks } from "./features/treks/TreksContext";
 import TrekQuickView from "./features/treks/components/TrekQuickView";
-import { colorForId } from "./shared/map";
+import { trekColor } from "./shared/map";
 import { formatDate, formatGain, formatKm } from "./shared/format";
 import { CalendarIcon, DistanceIcon, ElevationIcon, FlagIcon } from "./shared/icons";
 import styles from "./App.module.css";
@@ -73,7 +73,7 @@ export default function HomePage() {
                   {recent.map((t) => (
                     <li key={t.id}>
                       <button type="button" className={home.recentItem} onClick={() => setViewingId(t.id)} title="Apri la scheda">
-                        <span className={home.swatch} style={{ background: colorForId(t.id) }} aria-hidden="true" />
+                        <span className={home.swatch} style={{ background: trekColor(t) }} aria-hidden="true" />
                         <span className={home.recentBody}>
                           <span className={home.recentTitle}>{t.title}</span>
                           <span className={home.recentMeta}>

@@ -25,7 +25,11 @@ export const deleteFolder = (id: Folder["id"]) =>
 export const addTreksToFolder = (id: Folder["id"], trekIds: Trek["id"][]) =>
   apiJson<Trek[]>(`/folders/${id}/treks`, json({ trekIds }));
 
-export const createTrek = (payload: TrekPayload) => apiJson<Trek>("/treks", json(payload));
+// stesso colore (null = automatico) per le tracce di tutti i trek della cartella: restituisce i trek aggiornati
+export const colorFolderTreks = (id: Folder["id"], color: string | null) =>
+  apiJson<Trek[]>(`/folders/${id}/color`, { ...json({ color }), method: "PUT" });
+
+export const createTrek =(payload: TrekPayload) => apiJson<Trek>("/treks", json(payload));
 
 // sostituisce tutti i campi del trek (il gpx resta com'è)
 export const updateTrek = (trekId: Trek["id"], payload: TrekPayload) =>
@@ -42,22 +46,24 @@ export const deleteTreks = (trekIds: Trek["id"][]) =>
 export const updateTrekLocation = (trekId: Trek["id"], lat: number, lon: number) =>
   apiJson<Trek>(`/treks/${trekId}/location`, { ...json({ lat, lon }), method: "PUT" });
 
+// colore della traccia (null = automatico)
+export const updateTrekColor = (trekId: Trek["id"], color: string | null) =>
+  apiJson<Trek>(`/treks/${trekId}/color`, { ...json({ color }), method: "PUT" });
+
 // valutazione: stelle, fatica, paesaggio, tratti pericolosi e recensione (le note)
 export const updateTrekReview = (trekId: Trek["id"], review: TrekReview) =>
   apiJson<Trek>(`/treks/${trekId}/review`, { ...json(review), method: "PUT" });
 
-export function uploadGpx(trekId: Trek["id"], file: File, title?: string) {
+export function uploadGpx(trekId: Trek["id"], file: File) {
   const formData = new FormData();
   formData.append("file", file);
-  if (title?.trim()) formData.append("title", title.trim());
   return apiJson<Trek>(`/treks/${trekId}/gpx`, { method: "POST", body: formData });
 }
 
-export function createTrekWithGpx(payload: TrekPayload, file: File, gpxTitle?: string) {
+export function createTrekWithGpx(payload: TrekPayload, file: File) {
   const formData = new FormData();
   formData.append("trek", new Blob([JSON.stringify(payload)], { type: "application/json" }));
   formData.append("file", file);
-  if (gpxTitle?.trim()) formData.append("gpxTitle", gpxTitle.trim());
   return apiJson<Trek>("/treks/with-gpx", { method: "POST", body: formData });
 }
 

@@ -32,6 +32,11 @@ export function colorForId(id: string | number) {
   return TRACK_PALETTE[h % TRACK_PALETTE.length];
 }
 
+// colore della traccia di un trek: quello scelto dall'utente o, se manca, quello automatico dall'id
+export function trekColor(t: { id: string | number; color?: string | null }) {
+  return t.color ?? colorForId(t.id);
+}
+
 // Stesso colore più scuro (es. contorno delle tracce): amount 0..1 verso il nero
 export function darken(hex: string, amount = 0.35) {
   const n = parseInt(hex.slice(1), 16);

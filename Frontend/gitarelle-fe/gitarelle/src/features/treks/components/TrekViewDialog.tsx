@@ -18,7 +18,7 @@ import FolderSelect from "./FolderSelect";
 import DurationDialog from "./DurationDialog";
 import ReviewDialog from "./ReviewDialog";
 import StarRating from "./StarRating";
-import { SCALE_MAX, effortLabel, formatRating, hasReview, sceneryLabel } from "../review";
+import { SCALE_MAX, effortText, formatRating, hasReview, sceneryText } from "../review";
 import reviewStyles from "./Review.module.css";
 import styles from "./TrekDialogs.module.css";
 import MapLayers from "../../../shared/MapLayers";
@@ -289,8 +289,8 @@ export default function TrekViewDialog({ trek, gpx, color, onClose, onEdit, onDe
                 )}
                 {(trek.effort != null || trek.scenery != null || trek.dangerous === true) && (
                   <div className={reviewStyles.tags}>
-                    {trek.effort != null && <span className={reviewStyles.tag}>Fatica <b>{trek.effort}/{SCALE_MAX}</b> {effortLabel(trek.effort)}</span>}
-                    {trek.scenery != null && <span className={reviewStyles.tag}>Paesaggio <b>{trek.scenery}/{SCALE_MAX}</b> {sceneryLabel(trek.scenery)}</span>}
+                    {trek.effort != null && <span className={reviewStyles.tag}>Fatica <b>{trek.effort}/{SCALE_MAX}</b> {effortText(trek)}</span>}
+                    {trek.scenery != null && <span className={reviewStyles.tag}>Paesaggio <b>{trek.scenery}/{SCALE_MAX}</b> {sceneryText(trek)}</span>}
                     {trek.dangerous === true && <span className={`${reviewStyles.tag} ${reviewStyles.tagDanger}`}><AlertIcon size={13} />Tratti pericolosi</span>}
                   </div>
                 )}

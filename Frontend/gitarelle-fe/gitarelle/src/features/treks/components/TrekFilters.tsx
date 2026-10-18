@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ABROAD, type Trek } from "../types";
 import { NO_FILTERS, filterLabels, friendsOf, yearOf, type TrekFilterState } from "../trekFilters";
-import { FilterIcon } from "../../../shared/icons";
+import { FilterIcon, SearchIcon } from "../../../shared/icons";
 import RangeSlider from "../../../shared/RangeSlider";
 import Dropdown from "../../../shared/Dropdown";
 import { formatGain } from "../../../shared/format";
@@ -21,12 +21,38 @@ function boundsOf(values: number[], step: number): [number, number] | null {
   return hi > lo ? [lo, hi] : null;
 }
 
-// Pulsante "Filtri" con il pannello a tendina: regione, amici, anno, dislivello, distanza
+// Pulsante "Filtri" con il pannello a tendina: nome, regione, anno, dislivello, distanza, amici
 export default function TrekFilters({ treks, value, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<TrekFilterState>) => onChange({ ...value, ...patch });
   const active = filterLabels(value).length;
+
+  // ricerca per nome: il testo si vede subito, il filtro parte dopo una breve pausa (se no la mappa
+  // si reinquadrerebbe a ogni lettera). Se il filtro cambia da fuori (es. "Azzera") il campo si allinea
+  const [query, setQuery] = useState(value.query);
+  const [syncedQuery, setSyncedQuery] = useState(value.query);
+  if (value.query !== syncedQuery) {
+    setSyncedQuery(value.query);
+    setQuery(value.query);
+  }
+  const latest = useRef(value);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => {
+    latest.current = value;
+  });
+  useEffect(() => () => clearTimeout(timer.current), []);
+  function typeQuery(text: string) {
+    setQuery(text);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => onChange({ ...latest.current, query: text }), 250);
+  }
+
+  // all'apertura si può scrivere subito il nome
+  const search = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (open) search.current?.focus();
+  }, [open]);
 
   // clic fuori o Esc: chiude
   useEffect(() => {
@@ -90,6 +116,20 @@ export default function TrekFilters({ treks, value, onChange }: Props) {
 
       <div className={styles.menu} role="dialog" aria-label="Filtri">
         <div className={styles.panel}>
+          <label className={styles.field}>
+            <span>Nome</span>
+            <div className={styles.search}>
+              <SearchIcon size={14} />
+              <input
+                ref={search}
+                type="search"
+                value={query}
+                onChange={(e) => typeQuery(e.target.value)}
+                placeholder="Cerca un trek…"
+              />
+            </div>
+          </label>
+
           <div className={styles.field}>
             <span>Regione</span>
             <Dropdown

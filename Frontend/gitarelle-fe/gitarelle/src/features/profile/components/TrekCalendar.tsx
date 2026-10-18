@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Trek } from "../../treks/types";
 import { useTreks } from "../../treks/TreksContext";
 import TrekQuickView from "../../treks/components/TrekQuickView";
-import { colorForId } from "../../../shared/map";
+import { trekColor } from "../../../shared/map";
 import { formatGain, formatKm } from "../../../shared/format";
 import { DistanceIcon, ElevationIcon } from "../../../shared/icons";
 import styles from "./Profile.module.css";
@@ -94,7 +94,7 @@ export default function TrekCalendar() {
                   key={t.id}
                   type="button"
                   className={styles.calTrek}
-                  style={{ "--trek-color": colorForId(t.id) } as React.CSSProperties}
+                  style={{ "--trek-color": trekColor(t) } as React.CSSProperties}
                   onClick={() => setViewingId(t.id)}
                   title={`${t.title}${t.distanceMeters != null ? ` · ${formatKm(t.distanceMeters)}` : ""}${t.elevationGainMeters != null ? ` · ${formatGain(t.elevationGainMeters)}` : ""}`}
                   aria-label={`Apri ${t.title}`}

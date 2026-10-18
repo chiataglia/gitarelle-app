@@ -4,6 +4,7 @@ import { createTrekWithGpx } from "../../treks/api";
 import { errorMessage } from "../../../shared/api";
 import { TRACK_PALETTE } from "../../../shared/map";
 import FolderSelect from "../../treks/components/FolderSelect";
+import FriendsInput from "../../treks/components/FriendsInput";
 import TrekCompareMap, { type CompareItem } from "../../treks/components/TrekCompareMap";
 import { hasTrack, type BulkItem } from "../bulk";
 import styles from "./GpxViewer.module.css";
@@ -76,10 +77,7 @@ export default function GpxBulkImport({ items: initial, onClose }: Props) {
         </div>
 
         <div className={styles.saveRow}>
-          <label className="field">
-            <span>Amichetti (per tutti)</span>
-            <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
-          </label>
+          <FriendsInput value={amichetti} onChange={setAmichetti} label="Amichetti (per tutti)" />
           <FolderSelect value={folderIds} onChange={setFolderIds} />
         </div>
 

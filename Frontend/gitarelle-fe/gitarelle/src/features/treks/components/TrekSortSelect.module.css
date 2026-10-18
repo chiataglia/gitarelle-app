@@ -1,0 +1,61 @@
+.wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.select {
+  width: 170px;
+}
+
+/* testo più leggero della tendina normale: è un comando secondario accanto ai filtri */
+.select button {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.select button:hover,
+.select button[aria-expanded="true"] {
+  color: var(--text);
+}
+
+/* stesso aspetto della tendina (shared/Dropdown) */
+.dir {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.dir:hover,
+.dir:focus-visible {
+  color: var(--text);
+  border-color: var(--accent);
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .label {
+    display: none;
+  }
+  .select {
+    width: 140px;
+  }
+}

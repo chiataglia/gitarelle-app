@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import type { LatLngLiteral } from "leaflet";
 import MapPicker from "../../../shared/MapPicker";
 import TrackLayer from "../../../shared/TrackLayer";
 import FolderSelect from "./FolderSelect";
+import FriendsInput from "./FriendsInput";
+import ReviewFields from "./ReviewFields";
+import { EMPTY_REVIEW, isReviewEmpty } from "../review";
+import { ColorButton } from "../../../shared/ColorPicker";
+import { TRACK_COLOR } from "../../../shared/map";
+import reviewStyles from "./Review.module.css";
 import GpxBulkImport from "../../gpx/components/GpxBulkImport";
 import { readGpxFiles, type BulkItem } from "../../gpx/bulk";
 import { useTreks } from "../TreksContext";
@@ -21,19 +27,21 @@ type Mode = "new" | "existing";
 // che precompila titolo, data e punto. Più GPX insieme passano alla revisione in blocco.
 export default function TrekCreate() {
   const { treks, upsertTrek } = useTreks();
+  const navigate = useNavigate();
   const today = new Date().toISOString().split("T")[0];
 
   const [title, setTitle] = useState("");
   const [trekDate, setTrekDate] = useState(today);
   const [amichetti, setAmichetti] = useState("");
-  const [notes, setNotes] = useState("");
+  // valutazione facoltativa, come nello storico: il testo della recensione sono le note del trek
+  const [review, setReview] = useState(EMPTY_REVIEW);
+  const [color, setColor] = useState<string | null>(null); // null = automatico
   const [folderIds, setFolderIds] = useState<number[]>([]);
   const [pos, setPos] = useState<LatLngLiteral | null>(null);
 
   // traccia gpx (facoltativa)
   const [gpx, setGpx] = useState<ParsedGpx | null>(null);
   const [rawFile, setRawFile] = useState<File | null>(null);
-  const [gpxTitle, setGpxTitle] = useState("");
   const [mode, setMode] = useState<Mode>("new");
   const [existingId, setExistingId] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -83,7 +91,6 @@ export default function TrekCreate() {
   function removeGpx() {
     setGpx(null);
     setRawFile(null);
-    setGpxTitle("");
     setMode("new");
     setExistingId("");
     setPos(null);
@@ -94,7 +101,16 @@ export default function TrekCreate() {
     removeGpx();
     setTitle("");
     setAmichetti("");
-    setNotes("");
+    setReview(EMPTY_REVIEW);
+    setColor(null);
+  }
+
+  // "Annulla": si lascia l'inserimento e si torna alla pagina di prima (se c'era qualcosa di scritto si chiede prima)
+  function cancel() {
+    const dirty = gpx != null || title.trim() !== "" || amichetti.trim() !== "" || !isReviewEmpty(review) || color != null || pos != null;
+    if (dirty && !window.confirm("Annullare l'inserimento? Quello che hai scritto andrà perso.")) return;
+    if (window.history.length > 1) navigate(-1);
+    else navigate("/");
   }
 
   async function handleSubmit(e: React.SyntheticEvent) {
@@ -105,13 +121,17 @@ export default function TrekCreate() {
     try {
       setSaving(true);
       if (linking && rawFile) {
-        const updated = await uploadGpx(existingId, rawFile, gpxTitle);
+        const updated = await uploadGpx(existingId, rawFile);
         upsertTrek(updated);
         setOk(`GPX collegato a "${updated.title}"`);
       } else {
         // il punto è facoltativo: si potrà aggiungere dopo dallo storico
-        const payload = { title: title.trim(), trekDate, amichetti, notes, lat: pos?.lat ?? null, lon: pos?.lng ?? null, folderIds };
-        const created = rawFile ? await createTrekWithGpx(payload, rawFile, gpxTitle) : await createTrek(payload);
+        const payload = {
+          title: title.trim(), trekDate, amichetti, notes: review.notes, lat: pos?.lat ?? null, lon: pos?.lng ?? null, folderIds,
+          review: isReviewEmpty(review) ? undefined : review,
+          color,
+        };
+        const created = rawFile ? await createTrekWithGpx(payload, rawFile) : await createTrek(payload);
         upsertTrek(created);
         setOk(`Escursione "${created.title}" inserita${rawFile ? " con il suo GPX" : ""}`);
       }
@@ -139,7 +159,7 @@ export default function TrekCreate() {
       <div className={styles.layout}>
         <div className={`map-frame ${styles.map}`}>
           <MapPicker value={pos} onChange={setPos}>
-            {gpx && <TrackLayer gpx={gpx} trackKey={rawFile?.name ?? "gpx"} pin={false} />}
+            {gpx && <TrackLayer gpx={gpx} trackKey={rawFile?.name ?? "gpx"} color={color ?? TRACK_COLOR} pin={false} />}
           </MapPicker>
           {!linking && (
             <div className={`${styles.coordinates} ${pos ? styles.coordinatesSet : ""}`}>
@@ -159,31 +179,38 @@ export default function TrekCreate() {
         <form onSubmit={handleSubmit} className={`card ${styles.form}`}>
           {!gpx ? (
             <label
-              className={`${gpxStyles.dropzone} ${styles.dropzone} ${dragging ? gpxStyles.dropzoneActive : ""}`}
+              className={`${styles.dropzone} ${dragging ? styles.dropzoneActive : ""}`}
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
               onDragLeave={() => setDragging(false)}
               onDrop={onDrop}
             >
               <input type="file" accept=".gpx" multiple onChange={onPickFile} className={gpxStyles.fileInput} />
               <span className={styles.dropIcon} aria-hidden="true">⤒</span>
-              <span>
-                <strong>Hai la traccia GPX?</strong> Trascinala qui o <u>sfoglia</u>
-                <small>Titolo, data e punto si compilano da soli. Puoi caricare anche più file insieme.</small>
+              <span className={styles.dropText}>
+                <strong>Carica GPX</strong> · trascina qui o <u>sfoglia</u>
+              </span>
+              <span
+                className={styles.dropInfo}
+                title="Titolo, data e punto si compilano da soli. Puoi caricare anche più file insieme."
+                aria-label="Titolo, data e punto si compilano da soli. Puoi caricare anche più file insieme."
+              >
+                ?
               </span>
             </label>
           ) : (
+            // stessa altezza della zona vuota: caricando il file il form non salta
             <div className={styles.gpxBox}>
-              <div className={gpxStyles.fileChip}>
+              <span className={styles.gpxFile} title={rawFile?.name}>
                 <span aria-hidden="true">🗺️</span>
-                <b title={rawFile?.name}>{rawFile?.name}</b>
-                <button type="button" className={gpxStyles.resetBtn} onClick={removeGpx} aria-label="Togli il GPX">✕</button>
-              </div>
-              <div className={gpxStyles.segmented} role="tablist" aria-label="Dove salvare il GPX">
-                <button type="button" role="tab" aria-selected={mode === "new"} className={mode === "new" ? gpxStyles.segActive : ""} onClick={() => setMode("new")}>
-                  Nuova escursione
+                <b>{rawFile?.name}</b>
+                <button type="button" className={styles.gpxRemove} onClick={removeGpx} aria-label="Togli il GPX" title="Togli il GPX">✕</button>
+              </span>
+              <div className={styles.gpxMode} role="tablist" aria-label="Dove salvare il GPX">
+                <button type="button" role="tab" aria-selected={mode === "new"} className={mode === "new" ? styles.gpxModeOn : ""} onClick={() => setMode("new")}>
+                  Nuova
                 </button>
-                <button type="button" role="tab" aria-selected={mode === "existing"} className={mode === "existing" ? gpxStyles.segActive : ""} onClick={() => setMode("existing")}>
-                  Collega a una esistente
+                <button type="button" role="tab" aria-selected={mode === "existing"} className={mode === "existing" ? styles.gpxModeOn : ""} onClick={() => setMode("existing")} title="Collega il GPX a un'escursione già nel diario">
+                  Collega a esistente
                 </button>
               </div>
             </div>
@@ -203,38 +230,39 @@ export default function TrekCreate() {
             </label>
           ) : (
             <>
-              <label className="field">
-                <span>Titolo</span>
-                <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Anello del Monte Gennaro" />
-              </label>
-              <div className={styles.row}>
+              <div className={styles.titleRow}>
+                <label className="field">
+                  <span>Titolo</span>
+                  <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Es. Anello del Monte Gennaro" />
+                </label>
                 <label className="field">
                   <span>Data</span>
                   <input type="date" value={trekDate} onChange={(e) => setTrekDate(e.target.value)} />
                 </label>
-                <label className="field">
-                  <span>Amichetti</span>
-                  <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
-                </label>
+                <div className="field">
+                  <span>Colore</span>
+                  {/* il colore automatico dipende dall'id, che il trek non ha ancora: si mostra quello base */}
+                  <ColorButton value={color} onChange={setColor} autoColor={TRACK_COLOR} label={gpx ? "Colore della traccia" : "Colore sulla mappa"} />
+                </div>
               </div>
-              <FolderSelect value={folderIds} onChange={setFolderIds} />
-              <label className="field">
-                <span>Note</span>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Panorama, fatica, merenda al rifugio..." rows={4} />
-              </label>
+              <FriendsInput value={amichetti} onChange={setAmichetti} />
+              <FolderSelect value={folderIds} onChange={setFolderIds} allowCreate />
+
+              <div className={styles.reviewSection}>
+                <h3>Valutazione <small>facoltativa</small></h3>
+                <div className={reviewStyles.form}>
+                  <ReviewFields value={review} onChange={setReview} compact />
+                </div>
+              </div>
             </>
           )}
 
-          {gpx && (
-            <label className="field">
-              <span>Titolo GPX</span>
-              <input value={gpxTitle} onChange={(e) => setGpxTitle(e.target.value)} placeholder="Opzionale" />
-            </label>
-          )}
-
-          <button className="btn btn-primary" disabled={saving || !canSave}>
-            {saving ? "Salvataggio..." : linking ? "Collega GPX" : gpx ? "Crea escursione con GPX" : "Crea escursione"}
-          </button>
+          <div className={styles.footer}>
+            <button type="button" className="btn btn-ghost" onClick={cancel} disabled={saving}>Annulla</button>
+            <button type="submit" className="btn btn-primary" disabled={saving || !canSave}>
+              {saving ? "Salvataggio..." : linking ? "Collega GPX" : gpx ? "Crea con GPX" : "Crea escursione"}
+            </button>
+          </div>
 
           {error && <div className="alert alert-error">{error}</div>}
           {ok && (

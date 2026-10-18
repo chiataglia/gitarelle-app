@@ -207,6 +207,25 @@
   color: var(--muted);
 }
 
+/* "+ Nuova": cartella creata al volo dal form del trek */
+.pickNew {
+  border-style: dashed;
+}
+
+.pickNewInput {
+  width: 150px;
+  padding: 4px 12px !important; /* più basso dei campi normali: alto come le pillole */
+  font-size: 13px;
+  border-radius: 999px;
+  border-color: var(--accent);
+}
+
+.pickError {
+  align-self: center;
+  font-size: 12px;
+  color: var(--danger);
+}
+
 @media (max-width: 768px) {
   .bar {
     flex-direction: column;

@@ -1,12 +1,15 @@
 import { useState } from "react";
 import type { LatLngLiteral } from "leaflet";
 import type { Trek } from "../types";
-import { updateTrek } from "../api";
+import { updateTrek, updateTrekColor } from "../api";
 import { useTreks } from "../TreksContext";
 import { errorMessage } from "../../../shared/api";
+import { colorForId } from "../../../shared/map";
+import ColorPicker from "../../../shared/ColorPicker";
 import Modal from "../../../shared/Modal";
 import MapPicker from "../../../shared/MapPicker";
 import FolderSelect from "./FolderSelect";
+import FriendsInput from "./FriendsInput";
 import createStyles from "./TrekCreate.module.css";
 import styles from "./TrekDialogs.module.css";
 
@@ -19,6 +22,7 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
   const [amichetti, setAmichetti] = useState(trek.amichetti ?? "");
   const [notes, setNotes] = useState(trek.notes ?? "");
   const [folderIds, setFolderIds] = useState(trek.folderIds);
+  const [color, setColor] = useState(trek.color);
   const [pos, setPos] = useState<LatLngLiteral | null>(
     trek.lat != null && trek.lon != null ? { lat: trek.lat, lng: trek.lon } : null
   );
@@ -34,7 +38,7 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
     try {
       setSaving(true);
       setError(null);
-      upsertTrek(await updateTrek(trek.id, {
+      let saved = await updateTrek(trek.id, {
         title: title.trim(),
         trekDate: trekDate || null,
         amichetti,
@@ -42,7 +46,10 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
         lat: pos?.lat ?? null,
         lon: pos?.lng ?? null,
         folderIds,
-      }));
+      });
+      // il colore ha un suo endpoint: si salva solo se è cambiato
+      if (color !== trek.color) saved = await updateTrekColor(trek.id, color);
+      upsertTrek(saved);
       onClose();
     } catch (err) {
       setError(errorMessage(err, "Errore nel salvataggio"));
@@ -58,19 +65,18 @@ export default function TrekEditDialog({ trek, onClose }: { trek: Trek; onClose:
             <span>Titolo</span>
             <input value={title} onChange={(e) => setTitle(e.target.value)} required autoFocus />
           </label>
-          <div className={styles.row}>
-            <label className="field">
-              <span>Data</span>
-              <input type="date" value={trekDate} onChange={(e) => setTrekDate(e.target.value)} />
-            </label>
-            <label className="field">
-              <span>Amichetti</span>
-              <input value={amichetti} onChange={(e) => setAmichetti(e.target.value)} placeholder="Chi c'era?" />
-            </label>
-          </div>
-          <FolderSelect value={folderIds} onChange={setFolderIds} />
           <label className="field">
-            <span>Note</span>
+            <span>Data</span>
+            <input type="date" value={trekDate} onChange={(e) => setTrekDate(e.target.value)} />
+          </label>
+          <FriendsInput value={amichetti} onChange={setAmichetti} />
+          <FolderSelect value={folderIds} onChange={setFolderIds} />
+          <div className="field">
+            <span>{trek.hasGpx ? "Colore della traccia" : "Colore sulla mappa"}</span>
+            <ColorPicker value={color} onChange={(c) => setColor(c ?? null)} autoColor={colorForId(trek.id)} />
+          </div>
+          <label className="field">
+            <span>Recensione</span>
             <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={6} placeholder="Panorama, fatica, merenda al rifugio..." />
           </label>
           {trek.hasGpx && <p className={styles.hint}>🥾 La traccia GPX associata resta invariata.</p>}

@@ -88,6 +88,25 @@
   gap: 5px;
 }
 
+/* ricerca per nome: lente dentro il campo */
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.search > svg {
+  position: absolute;
+  left: 10px;
+  pointer-events: none;
+}
+
+.search > input {
+  padding: 7px 10px 7px 30px;
+  font-size: 13px;
+}
+
 .field > span {
   font-size: 11px;
   font-weight: 700;

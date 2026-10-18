@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import type { Folder, FolderFilter } from "../types";
 import { useTreks } from "../TreksContext";
-import { addTreksToFolder, createFolder, deleteFolder, renameFolder } from "../api";
+import { addTreksToFolder, colorFolderTreks, createFolder, deleteFolder, renameFolder } from "../api";
 import { isTrekDrag, readTrekDrag } from "../trekDrag";
 import { errorMessage } from "../../../shared/api";
 import { FolderIcon, PencilIcon, TrashIcon } from "../../../shared/icons";
 import Modal from "../../../shared/Modal";
+import ColorPicker from "../../../shared/ColorPicker";
 import styles from "./FolderBar.module.css";
 import dialogStyles from "./TrekDialogs.module.css";
 
@@ -110,7 +111,7 @@ export default function FolderBar({ value, onChange, dragging = false, onTreksAd
               + Aggiungi
             </button>
           )}
-          <button type="button" className={styles.toolBtn} onClick={() => setNaming(active)} title="Rinomina cartella" aria-label={`Rinomina ${active.name}`}>
+          <button type="button" className={styles.toolBtn} onClick={() => setNaming(active)} title="Modifica cartella (nome e colore delle tracce)" aria-label={`Modifica ${active.name}`}>
             <PencilIcon size={15} />
           </button>
           <button type="button" className={`${styles.toolBtn} ${styles.toolDanger}`} onClick={() => setDeleting(active)} title="Elimina cartella" aria-label={`Elimina ${active.name}`}>
@@ -122,6 +123,7 @@ export default function FolderBar({ value, onChange, dragging = false, onTreksAd
       {naming && (
         <FolderNameDialog
           folder={naming === "new" ? null : naming}
+          trekCount={naming === "new" ? 0 : countIn(naming.id)}
           onClose={() => setNaming(null)}
           onSaved={(f) => { setNaming(null); onChange(f.id); }}
         />
@@ -138,10 +140,12 @@ export default function FolderBar({ value, onChange, dragging = false, onTreksAd
   );
 }
 
-// Creazione (folder = null) o rinomina di una cartella
-function FolderNameDialog({ folder, onClose, onSaved }: { folder: Folder | null; onClose: () => void; onSaved: (f: Folder) => void }) {
-  const { upsertFolder } = useTreks();
+// Creazione (folder = null) o modifica di una cartella: nome e, se ha trek, un colore per tutte le loro tracce
+function FolderNameDialog({ folder, trekCount, onClose, onSaved }: { folder: Folder | null; trekCount: number; onClose: () => void; onSaved: (f: Folder) => void }) {
+  const { upsertFolder, upsertTreks } = useTreks();
   const [name, setName] = useState(folder?.name ?? "");
+  // undefined = colori dei trek invariati, null = tutti automatici
+  const [color, setColor] = useState<string | null | undefined>(undefined);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -155,6 +159,7 @@ function FolderNameDialog({ folder, onClose, onSaved }: { folder: Folder | null;
       setError(null);
       const saved = folder ? await renameFolder(folder.id, name.trim()) : await createFolder(name.trim());
       upsertFolder(saved);
+      if (folder && color !== undefined) upsertTreks(await colorFolderTreks(folder.id, color));
       onSaved(saved);
     } catch (err) {
       setError(errorMessage(err, "Errore nel salvataggio della cartella"));
@@ -163,17 +168,28 @@ function FolderNameDialog({ folder, onClose, onSaved }: { folder: Folder | null;
   }
 
   return (
-    <Modal title={folder ? "Rinomina cartella" : "Nuova cartella"} onClose={close}>
+    <Modal title={folder ? "Modifica cartella" : "Nuova cartella"} onClose={close}>
       <form onSubmit={onSubmit} className={dialogStyles.deleteBody}>
         <label className="field">
           <span>Nome</span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Es. Lombardia, Dolomiti, Weekend al lago..." required autoFocus />
         </label>
+        {folder && trekCount > 0 && (
+          <div className="field">
+            <span>Colore delle tracce</span>
+            <ColorPicker value={color} onChange={setColor} keepLabel="Non cambiare" disabled={saving} />
+            <p className={dialogStyles.hint}>
+              {color === undefined
+                ? "Ogni escursione tiene il suo colore."
+                : `Il colore verrà dato a ${trekCount === 1 ? "l'escursione" : `tutte le ${trekCount} escursioni`} della cartella${color === null ? " (automatico: uno diverso per ognuna)" : ""}.`}
+            </p>
+          </div>
+        )}
         {error && <div className="alert alert-error">{error}</div>}
         <div className={dialogStyles.footer}>
           <button type="button" className="btn btn-ghost" onClick={close} disabled={saving}>Annulla</button>
           <button type="submit" className="btn btn-primary" disabled={saving || !name.trim()}>
-            {saving ? "Salvataggio..." : folder ? "Rinomina" : "Crea cartella"}
+            {saving ? "Salvataggio..." : folder ? "Salva" : "Crea cartella"}
           </button>
         </div>
       </form>

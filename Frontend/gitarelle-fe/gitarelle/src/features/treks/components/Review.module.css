@@ -45,12 +45,12 @@
 /* ---------- dialog di valutazione ---------- */
 .form {
   display: grid;
-  gap: 18px;
+  gap: 12px;
 }
 
 .group {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .groupHead {
@@ -77,6 +77,49 @@
   display: grid;
   grid-template-columns: repeat(10, 1fr);
   gap: 4px;
+}
+
+/* scritta del voto: si clicca per sostituirla con una propria */
+.scaleLabel,
+.scaleLabelEdit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.scaleLabel > button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  border-bottom: 1px dashed rgba(127, 216, 160, 0.45);
+  cursor: text;
+}
+
+.scaleLabel > button:hover,
+.scaleLabel > button:focus-visible {
+  border-bottom-color: var(--fresh);
+  outline: none;
+}
+
+.scaleLabel > .scaleLabelReset {
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.scaleLabel > .scaleLabelReset:hover {
+  color: var(--text);
+}
+
+.scaleLabelEdit > input {
+  width: 16ch;
+  padding: 2px 6px;
+  font: inherit;
+  color: var(--text);
+  border-radius: 6px;
 }
 
 .tagGroup {
@@ -108,8 +151,8 @@
 
 .scale > button {
   min-width: 0;
-  padding: 8px 0;
-  font-size: 14px;
+  padding: 4px 0;
+  font-size: 13px;
   border-radius: 8px;
 }
 
@@ -325,4 +368,160 @@
   margin: 0;
   font-size: 14px;
   color: var(--muted);
+}
+
+/* ---------- campi compatti (ReviewFields) ---------- */
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ratingRowLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* etichette (icona + scelte) e tratti pericolosi sulla stessa riga */
+.tagsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.tagBox {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tagBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tagBtn:hover,
+.tagBtn:focus-visible,
+.tagBtnOpen {
+  color: var(--text);
+  border-color: var(--fresh);
+  outline: none;
+}
+
+.tagCount {
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+  text-align: center;
+  color: var(--bg);
+  background: var(--fresh);
+  border-radius: 999px;
+}
+
+/* pannellino largo e basso che si apre sopra l'icona (sta in fondo al form: sotto toccherebbe il fondo pagina).
+   Un gruppo per riga: nome a sinistra, pillole piccole a destra */
+.tagPanel {
+  position: absolute;
+  z-index: 30;
+  bottom: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 6px;
+  width: min(520px, 88vw);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.5);
+}
+
+.tagPanelGroup {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tagPanelGroup > small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.tagPanel .tagPicker {
+  gap: 4px;
+}
+
+.tagPanel .tagPicker > button {
+  padding: 2px 8px;
+  font-size: 11px;
+}
+
+/* fatica e paesaggio affiancati (form di creazione): due colonne con una linea in mezzo,
+   pulsanti dei voti stretti e testi piccoli */
+.scalesRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.scalesDivider {
+  align-self: stretch;
+  background: var(--border-strong);
+}
+
+.scalesRow .groupHead {
+  gap: 6px;
+  min-height: 20px;
+}
+
+.scalesRow .groupHead > span,
+.scalesRow .groupHead > small {
+  font-size: 12px;
+}
+
+.scalesRow .groupHead > small {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scalesRow .scale {
+  gap: 2px;
+}
+
+.scalesRow .scale > button {
+  padding: 3px 0;
+  font-size: 11px;
+  border-radius: 5px;
+}
+
+.scalesRow .scaleLabelEdit > input {
+  width: 10ch;
+}
+
+@media (max-width: 480px) {
+  .scalesRow {
+    grid-template-columns: 1fr;
+  }
+  .scalesDivider {
+    display: none;
+  }
 }
